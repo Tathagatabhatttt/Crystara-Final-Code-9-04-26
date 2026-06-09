@@ -1,0 +1,70 @@
+:root {
+  --btn-bg: #0c0914;
+  --border-radius: 12px;
+  --border-thickness: 1.5px;
+  --glow-size: 2px;
+  --glow-blur: 24px;
+  --glow-opacity: 0.65;
+  --grad-1: #f1b896;
+  --grad-2: #c1a27a;
+  --grad-3: #f1b896;
+}
+
+.crystal-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--btn-bg);
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  z-index: 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Gradient Border using Masking */
+.crystal-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: var(--border-thickness);
+  border-radius: var(--border-radius);
+  background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-1));
+  background-size: 200% auto;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  z-index: -1;
+  transition: background-position 0.5s ease;
+}
+
+/* Glow Effect */
+.crystal-btn::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--glow-size));
+  border-radius: calc(var(--border-radius) + var(--glow-size));
+  background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3));
+  filter: blur(var(--glow-blur));
+  opacity: var(--glow-opacity);
+  z-index: -2;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.crystal-btn:hover {
+  transform: scale(1.02);
+}
+
+.crystal-btn:hover::before {
+  background-position: right center;
+}
+
+.crystal-btn:hover::after {
+  filter: blur(28px);
+  opacity: 0.85;
+}
+
