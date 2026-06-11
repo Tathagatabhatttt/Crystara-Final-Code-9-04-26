@@ -97,7 +97,7 @@ const DiscoverYourCrystals = () => {
       <Header />
 
       {/* Destiny Number Hero */}
-      <section className={`py-16 sm:py-20 md:py-24 bg-gradient-to-r ${destinyInfo.color}`}>
+      <section className={`pb-16 pt-28 sm:pb-20 sm:pt-32 md:pb-24 md:pt-36 bg-gradient-to-r ${destinyInfo.color}`}>
         <div className="container mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -106,13 +106,13 @@ const DiscoverYourCrystals = () => {
             className="text-center max-w-4xl mx-auto"
           >
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Zap className="w-8 h-8 text-white animate-pulse" />
-              <span className="text-sm sm:text-base font-bold tracking-[0.3em] uppercase text-white/90">Your Destiny Number</span>
-              <Zap className="w-8 h-8 text-white animate-pulse" />
+              <Zap className="w-5 h-5 sm:w-7 sm:h-7 text-white animate-pulse flex-shrink-0" />
+              <span className="text-[11px] sm:text-sm md:text-base font-bold tracking-[0.2em] uppercase text-white/90">Your Destiny Number</span>
+              <Zap className="w-5 h-5 sm:w-7 sm:h-7 text-white animate-pulse flex-shrink-0" />
             </div>
 
-            <div className="mb-8 inline-block">
-              <div className="text-8xl sm:text-9xl font-bold text-white drop-shadow-lg">{destiny}</div>
+            <div className="mb-8 inline-flex min-h-[7.5rem] sm:min-h-[9rem] items-center justify-center">
+              <div className="text-8xl sm:text-9xl font-bold leading-none tabular-nums text-white drop-shadow-lg">{destiny}</div>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-serif font-bold mb-4 text-white">

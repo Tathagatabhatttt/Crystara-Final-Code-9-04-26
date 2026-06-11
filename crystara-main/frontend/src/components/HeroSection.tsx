@@ -142,10 +142,13 @@ const HeroSection = () => {
           transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-col gap-3 sm:gap-4 items-center"
         >
-          <Link to="/customize-your-own">
-            <CrystalButton className="px-8 sm:px-12 py-3 sm:py-4.5 text-xs sm:text-sm font-semibold uppercase tracking-wider text-white">
-              <span className="flex items-center justify-center gap-2 relative z-10">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+          <Link to="/customize-your-own" className="w-full sm:w-auto">
+            <CrystalButton
+              className="w-full sm:w-auto min-w-[240px] sm:min-w-[280px] px-10 sm:px-14 py-3.5 sm:py-4 text-xs sm:text-sm font-semibold uppercase tracking-widest text-white"
+              style={{ overflow: "visible" }}
+            >
+              <span className="flex items-center justify-center gap-2.5 relative z-10">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />
                 Customize Your Own
               </span>
             </CrystalButton>

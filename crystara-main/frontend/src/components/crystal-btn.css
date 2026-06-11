@@ -1,70 +1,74 @@
-:root {
-  --btn-bg: #0c0914;
-  --border-radius: 12px;
-  --border-thickness: 1.5px;
-  --glow-size: 2px;
-  --glow-blur: 24px;
-  --glow-opacity: 0.65;
-  --grad-1: #f1b896;
-  --grad-2: #c1a27a;
-  --grad-3: #f1b896;
-}
-
 .crystal-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.625rem;
   color: #fff;
-  background: var(--btn-bg);
+  background: #030306;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: 14px;
   cursor: pointer;
   z-index: 1;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  overflow: visible;
+  isolation: isolate;
+  transform: translateZ(0);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    filter 0.3s ease;
 }
 
-/* Gradient Border using Masking */
+/* Animated gradient border via pseudo-element masking */
 .crystal-btn::before {
   content: "";
   position: absolute;
   inset: 0;
-  padding: var(--border-thickness);
-  border-radius: var(--border-radius);
-  background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-1));
-  background-size: 200% auto;
+  padding: 2px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    #e64b86 0%,
+    #f09a3e 32%,
+    #9a52ff 70%,
+    #e64b86 100%
+  );
+  background-size: 300% 100%;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
+  animation: crystalBorderMove 3s linear infinite;
   z-index: -1;
-  transition: background-position 0.5s ease;
 }
 
-/* Glow Effect */
+/* Purple-pink glow behind the button */
 .crystal-btn::after {
   content: "";
   position: absolute;
-  inset: calc(-1 * var(--glow-size));
-  border-radius: calc(var(--border-radius) + var(--glow-size));
-  background: linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3));
-  filter: blur(var(--glow-blur));
-  opacity: var(--glow-opacity);
+  inset: auto 10px -7px;
+  height: 16px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(240, 154, 62, 0.7), rgba(230, 75, 134, 0.6), rgba(154, 82, 255, 0.7));
+  filter: blur(15px);
+  opacity: 0.72;
   z-index: -2;
   transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
-.crystal-btn:hover {
-  transform: scale(1.02);
+@keyframes crystalBorderMove {
+  0%   { background-position: 0%   center; }
+  100% { background-position: 300% center; }
 }
 
-.crystal-btn:hover::before {
-  background-position: right center;
+.crystal-btn:hover {
+  transform: translateY(-1px) scale(1.02);
+  filter: brightness(1.04);
+  box-shadow: 0 12px 28px rgba(176, 76, 232, 0.16);
 }
 
 .crystal-btn:hover::after {
-  filter: blur(28px);
-  opacity: 0.85;
+  filter: blur(22px);
+  opacity: 0.82;
 }
-

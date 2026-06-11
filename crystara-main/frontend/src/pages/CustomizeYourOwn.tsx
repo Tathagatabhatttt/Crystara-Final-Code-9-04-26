@@ -144,7 +144,7 @@ const CustomizeYourOwnPage = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               {/* Big Destiny Number with RGB Glow */}
               <motion.div
-                className="inline-flex items-center justify-center w-28 h-28 sm:w-36 sm:h-36 rounded-full mb-6 text-5xl sm:text-7xl font-bold font-serif relative"
+                className="inline-flex items-center justify-center w-32 h-32 sm:w-40 sm:h-40 rounded-full mb-6 text-6xl sm:text-8xl font-bold font-serif relative shrink-0"
                 animate={{
                   boxShadow: [
                     "0 0 30px rgba(255,0,0,0.5), 0 0 60px rgba(255,0,0,0.3)",
@@ -158,7 +158,7 @@ const CustomizeYourOwnPage = () => {
                 transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
               >
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 via-green-500 via-blue-500 via-purple-500 to-red-500 animate-rgb-border opacity-60" />
-                <span className="relative z-10 bg-background rounded-full w-[calc(100%-6px)] h-[calc(100%-6px)] flex items-center justify-center text-gradient-mystic">
+                <span className="relative z-10 bg-background rounded-full w-[calc(100%-6px)] h-[calc(100%-6px)] flex items-center justify-center leading-none tabular-nums text-white drop-shadow-[0_6px_14px_rgba(0,0,0,0.28)]">
                   {destiny}
                 </span>
               </motion.div>
