@@ -51,7 +51,7 @@ const HeroSection = () => {
             style={{
               backgroundImage: `url(${activeSlide.url})`,
               backgroundSize: "cover",
-              backgroundPosition: isMobile ? "center 42%" : "center center",
+              backgroundPosition: isMobile ? "center 48%" : "center center",
               backgroundRepeat: "no-repeat",
             }}
             initial={{ opacity: 0, scale: 1.08 }}
@@ -84,7 +84,7 @@ const HeroSection = () => {
             <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </button>
 
-          <div className="absolute bottom-8 sm:bottom-10 md:bottom-12 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+          <div className="absolute bottom-5 sm:bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-2">
             {slides.map((slide, index) => (
               <button
                 key={`${slide.url}-${index}`}
@@ -101,41 +101,48 @@ const HeroSection = () => {
         </>
       )}
 
-      <div className="relative z-10 flex h-full w-full max-w-5xl mx-auto flex-col items-center justify-center px-5 pb-24 pt-24 text-center sm:px-6 sm:pb-28 md:px-8 md:pb-32">
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-[10px] sm:text-xs md:text-sm font-medium tracking-[0.28em] sm:tracking-[0.32em] uppercase text-white/85 mb-3 sm:mb-5"
-        >
-          Handpicked · Natural · Energized
-        </motion.p>
+      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col">
+        {/* Headline — pinned toward top */}
+        <div className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pt-[6.75rem] text-center sm:px-6 sm:pt-[7.5rem] md:px-8 md:pt-[9.5rem]">
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mb-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:mb-3 sm:text-xs sm:tracking-[0.32em] md:text-sm"
+          >
+            Handpicked · Natural · Energized
+          </motion.p>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-serif font-bold leading-tight mb-3 sm:mb-4 text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]"
-        >
-          Discover the{" "}
-          <span className="text-gradient-mystic">Magic</span> of{" "}
-          <br className="hidden sm:block" />
-          Healing Crystals
-        </motion.h1>
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-3xl font-serif font-bold leading-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)] min-[390px]:text-4xl sm:text-5xl md:text-6xl xl:text-7xl"
+          >
+            Discover the{" "}
+            <span className="text-gradient-mystic">Magic</span> of{" "}
+            <br className="hidden sm:block" />
+            Healing Crystals
+          </motion.h1>
+        </div>
 
+        {/* Spacer keeps crystal visible in the middle */}
+        <div className="flex-1" aria-hidden />
+
+        {/* CTA — pinned toward bottom */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-4 flex w-full justify-center sm:mt-6"
+          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pb-[4.75rem] sm:px-6 sm:pb-[5.25rem] md:px-8 md:pb-[5.75rem]"
         >
-          <Link to="/customize-your-own" className="block w-full max-w-[34rem]">
+          <Link to="/customize-your-own" className="mx-auto block w-full max-w-[34rem]">
             <CrystalButton
-              className="w-full px-8 sm:px-14 py-4 sm:py-5 text-xs min-[390px]:text-sm sm:text-base font-semibold uppercase tracking-widest text-white"
+              className="w-full px-8 py-4 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
               style={{ overflow: "visible" }}
             >
-              <span className="flex items-center justify-center gap-2.5 relative z-10">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white flex-shrink-0" />
+              <span className="relative z-10 flex items-center justify-center gap-2.5">
+                <Sparkles className="h-4 w-4 flex-shrink-0 text-white sm:h-5 sm:w-5" />
                 Customize Your Own
               </span>
             </CrystalButton>
