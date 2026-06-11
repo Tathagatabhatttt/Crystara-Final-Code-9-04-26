@@ -98,7 +98,7 @@ const About = () => {
               <a href="mailto:support@crystara.in" className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-[#5d4496] text-white font-medium text-sm hover:opacity-90 transition-opacity">
                 <Mail size={16} /> support@crystara.in
               </a>
-              <a href="https://wa.me/916291951629" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-[#25D366] text-white font-medium text-sm hover:opacity-90 transition-opacity">
+              <a href="https://wa.me/917980133886" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-[#25D366] text-white font-medium text-sm hover:opacity-90 transition-opacity">
                 <MessageCircle size={16} /> WhatsApp Us
               </a>
             </div>

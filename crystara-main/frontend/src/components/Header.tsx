@@ -230,26 +230,79 @@ const Header = () => {
 
                 {/* Mobile Categories */}
                 <div className="border-t border-border pt-2 mt-1">
-                  <p className="font-serif font-semibold text-primary mb-2 text-xs">All Categories</p>
-                  {productCatalog.map((category) => (
-                    <div key={category.id} className="mb-2">
-                      <Link to={`/category/${category.slug}`} className="font-medium text-xs text-foreground hover:text-primary transition-colors block mb-1" onClick={() => setIsMenuOpen(false)}>
-                        {category.name}
-                      </Link>
-                      <div className="pl-2 flex flex-wrap gap-x-2 gap-y-0.5">
-                        {category.subCategories.slice(0, 4).map((sub) => (
-                          <Link key={sub.id} to={`/category/${category.slug}/${sub.slug}`} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors py-0.5" onClick={() => setIsMenuOpen(false)}>
-                            {sub.name}
-                          </Link>
+                  <button
+                    onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                    className="flex items-center justify-between w-full font-serif font-semibold text-primary mb-2 text-xs text-left"
+                  >
+                    <span>All Categories</span>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isCategoriesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  <AnimatePresence initial={false}>
+                    {isCategoriesOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden space-y-1 pl-1"
+                      >
+                        {productCatalog.map((category) => (
+                          <div key={category.id} className="border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
+                            <button
+                              onClick={() => setActiveCategory(activeCategory === category.id ? null : category.id)}
+                              className={`flex items-center justify-between w-full text-xs transition-colors text-left py-1 ${
+                                activeCategory === category.id
+                                  ? "text-primary font-serif font-semibold"
+                                  : "text-foreground font-sans hover:text-primary"
+                              }`}
+                            >
+                              <span>{category.name}</span>
+                              <ChevronDown size={12} className={`transition-transform duration-200 ${activeCategory === category.id ? 'rotate-180' : ''}`} />
+                            </button>
+                            
+                            <AnimatePresence initial={false}>
+                              {activeCategory === category.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden pl-3 pt-1 flex flex-col gap-1"
+                                >
+                                  <Link
+                                    to={`/category/${category.slug}`}
+                                    className="text-[11px] text-primary hover:text-primary/80 font-medium py-0.5"
+                                    onClick={() => {
+                                      setIsMenuOpen(false);
+                                      setIsCategoriesOpen(false);
+                                      setActiveCategory(null);
+                                    }}
+                                  >
+                                    View All {category.name} →
+                                  </Link>
+                                  {category.subCategories.map((sub) => (
+                                    <Link
+                                      key={sub.id}
+                                      to={`/category/${category.slug}/${sub.slug}`}
+                                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors py-0.5"
+                                      onClick={() => {
+                                        setIsMenuOpen(false);
+                                        setIsCategoriesOpen(false);
+                                        setActiveCategory(null);
+                                      }}
+                                    >
+                                      {sub.name}
+                                    </Link>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         ))}
-                        {category.subCategories.length > 4 && (
-                          <Link to={`/category/${category.slug}`} className="text-[10px] text-primary hover:text-primary/80 py-0.5" onClick={() => setIsMenuOpen(false)}>
-                            +{category.subCategories.length - 4} more
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 <div className="flex items-center gap-2 pt-2 border-t border-border">

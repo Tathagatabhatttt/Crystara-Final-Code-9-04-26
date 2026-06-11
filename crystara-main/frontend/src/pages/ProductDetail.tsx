@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Heart, ShoppingBag, Minus, Plus, ChevronLeft, Sparkles, Award, Zap, Banknote, Gift } from "lucide-react";
+import { Heart, ShoppingBag, Minus, Plus, ChevronLeft, Sparkles, Award, Zap, Banknote, Gift, Shield } from "lucide-react";
 import { useState, useEffect } from "react";
 import { trackEvent } from "@/services/analytics";
 import Header from "@/components/Header";
@@ -206,7 +206,7 @@ const ProductDetail = () => {
               <ProductImageGallery images={galleryImages} productName={product.name} />
             </motion.div>
 
-            {/* Product Info - Reordered: Name → About → Price → Actions → Features */}
+            {/* Product Info - Reordered */}
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }} className="flex flex-col">
               {/* Product Name */}
               <span className="text-xs md:text-sm text-primary font-medium uppercase tracking-wider mb-1">{product.subCategory}</span>
@@ -215,40 +215,11 @@ const ProductDetail = () => {
               {/* About the Crystal */}
               <div className="mb-4">
                 <h3 className="font-semibold mb-2 text-sm md:text-base">About this crystal</h3>
-                <p className="text-muted-foreground leading-relaxed text-sm">
+                <p className="text-muted-foreground leading-relaxed text-sm line-clamp-2">
                   This beautiful {product.name} is carefully selected for its exceptional quality and powerful
                   metaphysical properties. Known for its ability to {product.benefit.toLowerCase()}, this crystal
                   makes a perfect addition to your spiritual practice or as a meaningful gift.
                 </p>
-              </div>
-
-              {/* What it does */}
-              <div className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                <h3 className="font-serif font-semibold mb-2 text-sm md:text-base text-primary flex items-center gap-2">
-                  <Sparkles size={16} /> What This Crystal Does
-                </h3>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                  {properties.map((prop, i) => (
-                    <li key={i} className="text-sm flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                      {prop}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Made Of */}
-              <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
-                <h3 className="font-semibold text-xs md:text-sm mb-1">Made Of</h3>
-                <p className="text-xs md:text-sm text-muted-foreground">{material}</p>
-              </div>
-
-              {/* Authenticity Certificate */}
-              <div className="mb-4 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
-                <h3 className="font-semibold text-sm md:text-base text-green-600 flex items-center gap-2 mb-1">
-                  <Award size={16} /> Authenticity Certificate Included
-                </h3>
-                <p className="text-xs md:text-sm text-muted-foreground">Every crystal comes with a Certificate of Authenticity verifying it is 100% natural and energetically cleansed.</p>
               </div>
 
               {/* Price */}
@@ -333,6 +304,35 @@ const ProductDetail = () => {
                     {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
                   </Button>
                 )}
+              </div>
+
+              {/* What it does */}
+              <div className="mb-4 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                <h3 className="font-serif font-semibold mb-2 text-sm md:text-base text-primary flex items-center gap-2">
+                  <Sparkles size={16} /> What This Crystal Does
+                </h3>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {properties.map((prop, i) => (
+                    <li key={i} className="text-sm flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                      {prop}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Made Of */}
+              <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
+                <h3 className="font-semibold text-xs md:text-sm mb-1">Made Of</h3>
+                <p className="text-xs md:text-sm text-muted-foreground">{material}</p>
+              </div>
+
+              {/* Authenticity Certificate */}
+              <div className="mb-4 p-3 rounded-xl bg-green-500/5 border border-green-500/20">
+                <h3 className="font-semibold text-sm md:text-base text-green-600 flex items-center gap-2 mb-1">
+                  <Award size={16} /> Authenticity Certificate Included
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground">Every crystal comes with a Certificate of Authenticity verifying it is 100% natural and energetically cleansed.</p>
               </div>
 
               {/* Features */}

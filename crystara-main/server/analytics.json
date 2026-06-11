@@ -20,9 +20,14 @@
     "0vnz6rcnonznzmcdmqbm86",
     "kpivwgstatmeamq8z3oucw",
     "okaal8fm6lho7tlds02g7c",
-    "7gy2b8uv7ebhnhaf5xtzqv"
+    "7gy2b8uv7ebhnhaf5xtzqv",
+    "jdm1ykeo1eocqa1axd9n",
+    "s049j8ci8bg5zbd1ouzbcp",
+    "02hpr7pbgehmrcmkpy2llrr",
+    "nfjgewh0ahnj7dr6xk1ra",
+    "p2qrlhmyjla76a4gg5m6d"
   ],
-  "pageViews": 211,
+  "pageViews": 252,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -33,7 +38,13 @@
     "rings-heart-shaped-tiger-eye": 2876,
     "bracelets-beads-bracelet-hematite": 16269,
     "bracelets-beads-bracelet-money-magnet": 166,
-    "bracelets-beads-bracelet-lapis": 323
+    "bracelets-beads-bracelet-lapis": 323,
+    "lockets-raw-stone-pendant-amethyst": 1,
+    "lockets-silver-cap-pendant-amethyst": 1,
+    "rings-feather-touch-amethyst": 1,
+    "lockets-silver-cap-pendant-tiger-eye": 1,
+    "rings-diamond-cut-oval-faced-green-jade": 1,
+    "lockets-thread-wrapped-pendant-ruby-matrix": 1
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
@@ -89,6 +100,36 @@
       "name": "Lapis Beads Bracelet",
       "category": "Bracelets",
       "image": "https://www.maitriexport.com/cdn/shop/files/triple-main.jpg?v=1699444759&width=800"
+    },
+    "lockets-raw-stone-pendant-amethyst": {
+      "name": "Amethyst Raw Stone Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/mix-1.jpg?v=1699446935&width=800"
+    },
+    "lockets-silver-cap-pendant-amethyst": {
+      "name": "Amethyst Silver Cap Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/mix-1.jpg?v=1699446935&width=800"
+    },
+    "rings-feather-touch-amethyst": {
+      "name": "Amethyst Feather Touch",
+      "category": "Rings",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1_308057d3-4129-45e8-ab10-1c314c4240a3.png?v=1723792481&width=800"
+    },
+    "lockets-silver-cap-pendant-tiger-eye": {
+      "name": "Tiger Eye Silver Cap Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/2-9_a7cb4b62-9086-49bf-a114-50a855cf324f.jpg?v=1699446728&width=800"
+    },
+    "rings-diamond-cut-oval-faced-green-jade": {
+      "name": "Green Jade Diamond Cut Oval Faced",
+      "category": "Rings",
+      "image": "https://cdn.sanity.io/images/24b9t1zn/production/2628e2b76e2cd75fc173dd6ace981f554b6af8c8-760x1024.jpg"
+    },
+    "lockets-thread-wrapped-pendant-ruby-matrix": {
+      "name": "Ruby Matrix Thread Wrapped Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1-10_4e6874da-7ec5-41fd-8bf1-181e8fb39825.jpg?v=1699446728&width=800"
     }
   }
 }

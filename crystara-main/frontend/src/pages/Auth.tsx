@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, Sparkles, KeyRound, CheckCircle2, AlertCircle, Loader2, Gift, Copy } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import OnboardingForm from "@/components/OnboardingForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +48,21 @@ const Auth = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const { signIn, signUp } = useAuth();
+  const { user, loading: authLoading, isOnboarded, signIn, signUp, checkOnboardingStatus } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (authLoading || !user || showOnboarding) return;
+
+    if (isOnboarded === false) {
+      setShowOnboarding(true);
+      return;
+    }
+
+    if (isOnboarded === true) {
+      navigate("/profile");
+    }
+  }, [authLoading, user, isOnboarded, showOnboarding, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,8 +76,9 @@ const Auth = () => {
         } else {
           toast.success("Welcome back!");
 
-          // TODO: replace with actual onboarding check
-          const onboarded = true;
+          const onboarded = session?.access_token
+            ? await checkOnboardingStatus(session.access_token)
+            : false;
 
           if (onboarded) {
             navigate("/profile");
@@ -86,7 +102,11 @@ const Auth = () => {
           setShowSignupOffer(true);
           if (session?.access_token) {
             toast.success("Account created! Your 10% welcome discount is ready.");
-            setShowOnboarding(true);
+            const onboarded = await checkOnboardingStatus(session.access_token);
+            setShowOnboarding(!onboarded);
+            if (onboarded) {
+              navigate("/profile");
+            }
           } else {
             toast.success(
               "Account created. Verify email, then sign in to use your 10% off."
@@ -223,7 +243,12 @@ const Auth = () => {
       if (error) throw error;
       if (data.session) {
         toast.success("Welcome!");
-        navigate("/profile");
+        const onboarded = await checkOnboardingStatus(data.session.access_token);
+        if (onboarded) {
+          navigate("/profile");
+        } else {
+          setShowOnboarding(true);
+        }
       } else {
         toast.error("Failed to verify code. Please try again.");
       }
@@ -239,6 +264,21 @@ const Auth = () => {
       <Header />
 
       <main className="pt-20">
+        {showOnboarding && user ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[70vh]"
+          >
+            <OnboardingForm
+              onComplete={() => {
+                setShowOnboarding(false);
+                navigate("/profile");
+              }}
+            />
+          </motion.div>
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -529,6 +569,7 @@ const Auth = () => {
             </CardContent>
           </Card>
         </motion.div>
+        )}
       </main>
 
       <Footer />

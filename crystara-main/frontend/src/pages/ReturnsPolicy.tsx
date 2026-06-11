@@ -33,7 +33,7 @@ const ReturnsPolicy = () => {
     {
       title: "Contact for Issues",
       icon: Phone,
-      content: "For any replacement-related queries, contact us:\n• Email: support@crystara.in\n• WhatsApp: +91 6291951629\n• Response time: Within 24-48 hours\n\nWe reserve the right to deny replacement if the above conditions are not met.",
+      content: "For any replacement-related queries, contact us:\n• Email: support@crystara.in\n• WhatsApp: +91 7980133886\n• Response time: Within 24-48 hours\n\nWe reserve the right to deny replacement if the above conditions are not met.",
     },
   ];
 
