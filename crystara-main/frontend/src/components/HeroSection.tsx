@@ -42,31 +42,29 @@ const HeroSection = () => {
   const activeSlide = slides[currentSlide];
 
   return (
-    <section
-      className="relative w-full overflow-hidden bg-black flex items-center justify-center pt-24 md:pt-28"
-      style={{ minHeight: isMobile ? "82svh" : "100svh" }}
-    >
+    <section className="relative w-full h-[100svh] min-h-[100svh] overflow-hidden bg-black">
       <div className="absolute inset-0 w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeSlide.url}
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full scale-105"
             style={{
               backgroundImage: `url(${activeSlide.url})`,
               backgroundSize: "cover",
-              backgroundPosition: isMobile ? "center top" : "center",
+              backgroundPosition: isMobile ? "center 42%" : "center center",
               backgroundRepeat: "no-repeat",
             }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, scale: 1.08 }}
+            animate={{ opacity: 1, scale: 1.05 }}
+            exit={{ opacity: 0, scale: 1.08 }}
             transition={{ duration: 0.7 }}
             role="img"
             aria-label={activeSlide.alt || `Hero slide ${currentSlide + 1}`}
           />
         </AnimatePresence>
-        <div className="absolute inset-0 bg-black/42" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/10 to-background/80" />
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/55" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
       </div>
 
       {slides.length > 1 && (
@@ -103,8 +101,7 @@ const HeroSection = () => {
         </>
       )}
 
-      {/* Text content — bottom-aligned on mobile, center on desktop */}
-      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center justify-center text-center px-5 pb-24 pt-4 sm:px-6 sm:pb-28 md:px-8 md:pb-32">
+      <div className="relative z-10 flex h-full w-full max-w-5xl mx-auto flex-col items-center justify-center px-5 pb-24 pt-24 text-center sm:px-6 sm:pb-28 md:px-8 md:pb-32">
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,7 +115,7 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-serif font-bold leading-tight mb-4 sm:mb-5 text-white drop-shadow-lg"
+          className="text-3xl min-[390px]:text-4xl sm:text-5xl md:text-6xl xl:text-7xl font-serif font-bold leading-tight mb-3 sm:mb-4 text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]"
         >
           Discover the{" "}
           <span className="text-gradient-mystic">Magic</span> of{" "}
@@ -126,24 +123,15 @@ const HeroSection = () => {
           Healing Crystals
         </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-sm min-[390px]:text-base sm:text-lg md:text-xl text-white/85 mb-6 sm:mb-8 max-w-[21rem] sm:max-w-2xl mx-auto leading-relaxed drop-shadow"
-        >
-          Discover our curated collection of healing crystals, designed to bring balance and positive energy into your life.
-        </motion.p>
-
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-col gap-3 sm:gap-4 items-center"
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-4 flex w-full justify-center sm:mt-6"
         >
-          <Link to="/customize-your-own" className="w-full sm:w-auto">
+          <Link to="/customize-your-own" className="block w-full max-w-[34rem]">
             <CrystalButton
-              className="w-full sm:w-auto max-w-[28rem] min-w-0 sm:min-w-[30rem] px-8 sm:px-14 py-4 sm:py-5 text-xs min-[390px]:text-sm sm:text-base font-semibold uppercase tracking-widest text-white"
+              className="w-full px-8 sm:px-14 py-4 sm:py-5 text-xs min-[390px]:text-sm sm:text-base font-semibold uppercase tracking-widest text-white"
               style={{ overflow: "visible" }}
             >
               <span className="flex items-center justify-center gap-2.5 relative z-10">
@@ -155,7 +143,7 @@ const HeroSection = () => {
         </motion.div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 h-16 sm:h-24 bg-gradient-to-t from-background to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent sm:h-28" />
     </section>
   );
 };
