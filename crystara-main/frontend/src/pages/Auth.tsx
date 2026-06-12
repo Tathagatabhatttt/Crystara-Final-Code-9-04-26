@@ -394,17 +394,17 @@ const Auth = () => {
                 otpSent ? (
                   <form onSubmit={handleVerifyOtp} className="space-y-4">
                     <div className="text-center text-sm text-muted-foreground mb-2">
-                      We sent a 6-digit verification code to <span className="font-semibold text-foreground">{email}</span>.
+                      We sent a verification code to <span className="font-semibold text-foreground">{email}</span>.
                     </div>
                     <div className="relative">
                       <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
                         type="text"
-                        placeholder="Enter 6-digit code"
+                        placeholder="Enter verification code"
                         value={otpCode}
                         onChange={(e) => setOtpCode(e.target.value)}
                         className="pl-10 tracking-widest text-center font-semibold text-lg"
-                        maxLength={6}
+                        maxLength={8}
                         required
                       />
                     </div>
