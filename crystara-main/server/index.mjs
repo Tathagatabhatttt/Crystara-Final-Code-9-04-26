@@ -9,6 +9,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const app = express();
+const isVercel = Boolean(process.env.VERCEL);
 
 // Initialize Supabase clientsiup
 const supabase = createClient(
@@ -17,7 +18,9 @@ const supabase = createClient(
 );
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ANALYTICS_FILE = join(__dirname, "analytics.json");
+const ANALYTICS_FILE = isVercel
+  ? "/tmp/analytics.json"
+  : join(__dirname, "analytics.json");
 
 // Load initial state
 let analyticsData = {
@@ -84,8 +87,8 @@ app.use(
 
 // Basic CORS so the Vite dev server (default 5173) can call this API
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   if (req.method === "OPTIONS") {
     return res.sendStatus(200);
   }
@@ -983,8 +986,12 @@ app.post("/auth/signup", async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 5001;
+if (!isVercel) {
+  const port = process.env.PORT || 5001;
 
-app.listen(port, () => {
-  console.log(`[razorpay] Server listening on http://localhost:${port}`);
-});
+  app.listen(port, () => {
+    console.log(`[razorpay] Server listening on http://localhost:${port}`);
+  });
+}
+
+export default app;
