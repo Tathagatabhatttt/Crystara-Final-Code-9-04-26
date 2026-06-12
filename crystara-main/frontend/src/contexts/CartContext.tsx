@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode, useRef } fro
 import { toast } from "sonner";
 import { trackEvent } from "@/services/analytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { API_URL } from "@/lib/api";
 
 export interface CartItem {
   id: string;
@@ -78,7 +79,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const loadCart = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/cart`, {
+        const response = await fetch(`${API_URL}/cart`, {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
           },
@@ -92,7 +93,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         if (remoteItems.length > 0) {
           setItems(remoteItems);
         } else if (items.length > 0) {
-          await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/cart`, {
+          await fetch(`${API_URL}/cart`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -118,7 +119,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const saveCart = async () => {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/cart`, {
+        await fetch(`${API_URL}/cart`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

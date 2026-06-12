@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface ProfileData {
     name: string;
@@ -50,7 +51,7 @@ const Settings = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+                `${API_URL}/profile`,
                 {
                     headers: {
                         Authorization: `Bearer ${session?.access_token}`,
@@ -103,7 +104,7 @@ const Settings = () => {
         setSaving(true);
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+                `${API_URL}/profile`,
                 {
                     method: "PATCH",
                     headers: {

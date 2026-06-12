@@ -7,6 +7,7 @@ import { Search, Package, CheckCircle2, Clock, Truck, MapPin } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 const statusSteps = ["pending", "confirmed", "shipped", "delivered"];
 const statusLabels: Record<string, string> = {
@@ -33,7 +34,7 @@ const TrackOrder = () => {
   const performTrack = async (searchId: string, searchEmail: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/track`, {
+      const response = await fetch(`${API_URL}/orders/track`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,5 @@
+import { API_URL } from "@/lib/api";
+
 const getSessionId = () => {
   let sid = sessionStorage.getItem("crystara_session_id");
   if (!sid) {
@@ -18,7 +20,7 @@ export interface TrackEventParams {
 export const trackEvent = async (params: TrackEventParams) => {
   try {
     const sessionId = getSessionId();
-    await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/api/analytics/track`, {
+    await fetch(`${API_URL}/api/analytics/track`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

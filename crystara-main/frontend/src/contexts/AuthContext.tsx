@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { claimPendingWelcomeOffer } from "@/lib/welcomeOffer";
+import { API_URL } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -42,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!session?.access_token) return;
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+        `${API_URL}/profile`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/onboarding/status`,
+        `${API_URL}/onboarding/status`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -131,17 +132,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (data?.session) {
-      setSession(data.session);
-      setUser(data.session.user);
-      claimPendingWelcomeOffer(data.session.user.id);
+    try {
+      // Create user auto-confirmed using backend custom route (bypasses rate limit)
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to sign up");
+      }
+
+      // Automatically sign in the user
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data?.session) {
+        setSession(data.session);
+        setUser(data.session.user);
+        claimPendingWelcomeOffer(data.session.user.id);
+      }
+      return { error: null, session: data?.session ?? null };
+    } catch (err) {
+      console.error("[auth] Registration failed:", err);
+      return { error: err, session: null };
     }
-    return { error, session: data?.session ?? null };
   };
 
   const signOut = async () => {
@@ -149,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (accessToken) {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/cart`, {
+        await fetch(`${API_URL}/cart`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",

@@ -2,6 +2,7 @@
 // Add this to your Cart.tsx or create a separate service file
 
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 export interface OrderData {
   orderId: string;
@@ -26,7 +27,7 @@ export const saveOrderToServer = async (
   authToken: string,
 ): Promise<{ success: boolean; order?: any; error?: string }> => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/orders`, {
+    const response = await fetch(`${API_URL}/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,7 +61,7 @@ export const verifyAndSaveOrder = async (
   try {
     // First, verify the payment signature with your backend
     const verifyResponse = await fetch(
-      `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/verify-payment`,
+      `${API_URL}/verify-payment`,
       {
         method: "POST",
         headers: {

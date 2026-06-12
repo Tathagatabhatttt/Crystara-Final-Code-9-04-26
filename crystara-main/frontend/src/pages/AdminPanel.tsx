@@ -58,6 +58,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProductById } from "@/data/products";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface AnalyticsProductItem {
   id: string;
@@ -217,7 +218,7 @@ const AdminPanel = () => {
     try {
       setLoadingAnalytics(true);
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/api/analytics/overview`,
+        `${API_URL}/api/analytics/overview`,
         {
           headers: {
             Authorization: `Bearer ${session?.access_token}`,
@@ -241,7 +242,7 @@ const AdminPanel = () => {
   const fetchStats = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/admin/orders/stats/overview`,
+        `${API_URL}/admin/orders/stats/overview`,
         {
           headers: {
             Authorization: `Bearer ${session?.access_token}`,
@@ -264,7 +265,7 @@ const AdminPanel = () => {
     try {
       setLoadingCustomers(true);
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/admin/customers`,
+        `${API_URL}/admin/customers`,
         {
           headers: {
             Authorization: `Bearer ${session?.access_token}`,
@@ -292,7 +293,7 @@ const AdminPanel = () => {
       setLoading(true);
       setError(null);
 
-      let url = `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/admin/orders?page=${currentPage}&limit=20`;
+      let url = `${API_URL}/admin/orders?page=${currentPage}&limit=20`;
 
       if (statusFilter !== "all") {
         url += `&status=${statusFilter}`;
@@ -330,7 +331,7 @@ const AdminPanel = () => {
       setUpdatingOrderId(orderId);
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/admin/orders/${orderId}`,
+        `${API_URL}/admin/orders/${orderId}`,
         {
           method: "PATCH",
           headers: {

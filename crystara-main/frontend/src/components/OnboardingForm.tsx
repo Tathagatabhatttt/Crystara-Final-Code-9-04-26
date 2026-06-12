@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface OnboardingFormProps {
     onComplete: () => void;
@@ -96,7 +97,7 @@ const OnboardingForm = ({ onComplete }: OnboardingFormProps) => {
         setLoading(true);
         try {
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/onboarding/profile`,
+                `${API_URL}/onboarding/profile`,
                 {
                     method: "POST",
                     headers: {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface OrderItem {
     id: string;
@@ -61,7 +62,7 @@ const Orders = () => {
             setError(null);
 
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/orders/user/history`,
+                `${API_URL}/orders/user/history`,
                 {
                     headers: {
                         Authorization: `Bearer ${session?.access_token}`,

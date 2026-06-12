@@ -168,6 +168,53 @@ app.post("/verify-payment", (req, res) => {
   }
 });
 
+// Public endpoint to bypass email rate limits by registering and auto-confirming users
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    // Call Supabase Admin API to create and auto-confirm the user
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    const user = data.user;
+
+    // Initialize blank user profile in database
+    const { error: profileError } = await supabase
+      .from("user_profiles")
+      .upsert(
+        {
+          user_id: user.id,
+          email: user.email,
+          role: "user",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (profileError) {
+      console.error("[auth] Profile initialization failed:", profileError);
+    }
+
+    return res.json({ success: true, user });
+  } catch (error) {
+    console.error("[auth] Error in backend signup:", error);
+    return res.status(500).json({ error: "Failed to register user" });
+  }
+});
+
 // Middleware to verify auth token
 async function verifyAuth(req, res, next) {
   try {
@@ -885,6 +932,49 @@ app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => 
   } catch (error) {
     console.error("[analytics] Error building overview stats:", error);
     return res.status(500).json({ error: "Failed to fetch analytics overview" });
+  }
+});
+
+// Public endpoint for auto-confirmed signups (bypasses Supabase email rate limits in dev)
+app.post("/auth/signup", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    console.log(`[auth] Creating auto-confirmed user via admin client: ${email}`);
+
+    // Create user with email auto-confirmed using admin client
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+
+    if (error) {
+      console.error("[auth] Supabase admin signup failed:", error);
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Upsert corresponding profile in public.user_profiles
+    const { error: profileError } = await supabase
+      .from("user_profiles")
+      .upsert({
+        user_id: data.user.id,
+        email: email,
+        role: "user",
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+
+    if (profileError) {
+      console.error("[auth] Error creating user profile:", profileError.message);
+    }
+
+    return res.json({ success: true, user: data.user });
+  } catch (error) {
+    console.error("[auth] Error during signup:", error);
+    return res.status(500).json({ error: "Signup failed" });
   }
 });
 

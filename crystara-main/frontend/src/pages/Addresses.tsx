@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 
 interface Address {
     id: string;
@@ -61,7 +62,7 @@ const Addresses = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+                `${API_URL}/profile`,
                 {
                     headers: {
                         Authorization: `Bearer ${session?.access_token}`,
@@ -128,7 +129,7 @@ const Addresses = () => {
             if (editingId === "primary" || (!editingId && addresses.length === 0)) {
                 // Update the primary address in profile fields
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+                    `${API_URL}/profile`,
                     {
                         method: "PATCH",
                         headers: {
@@ -192,7 +193,7 @@ const Addresses = () => {
                 const extraAddresses = updatedAddresses.filter((a) => a.id !== "primary");
 
                 const response = await fetch(
-                    `${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`,
+                    `${API_URL}/profile`,
                     {
                         method: "PATCH",
                         headers: {
@@ -224,7 +225,7 @@ const Addresses = () => {
 
         try {
             if (id === "primary") {
-                await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`, {
+                await fetch(`${API_URL}/profile`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",
@@ -239,7 +240,7 @@ const Addresses = () => {
                 });
             } else {
                 const extraAddresses = addresses.filter((a) => a.id !== "primary" && a.id !== id);
-                await fetch(`${import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL}/profile`, {
+                await fetch(`${API_URL}/profile`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",
