@@ -37,7 +37,7 @@ interface Order {
 }
 
 const Orders = () => {
-    const { user, session, profile } = useAuth();
+    const { user, session, profile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
@@ -45,6 +45,7 @@ const Orders = () => {
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     useEffect(() => {
+        if (authLoading) return;
         if (!user) {
             navigate("/auth");
             return;
@@ -53,10 +54,13 @@ const Orders = () => {
             navigate("/admin");
             return;
         }
-        fetchOrders();
-    }, [user, profile?.role, navigate]);
+        if (session?.access_token) {
+            fetchOrders();
+        }
+    }, [user, session, profile?.role, authLoading, navigate]);
 
     const fetchOrders = async () => {
+        if (!session?.access_token) return;
         try {
             setLoading(true);
             setError(null);
