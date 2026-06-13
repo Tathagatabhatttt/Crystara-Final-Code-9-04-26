@@ -122,7 +122,7 @@ function getRazorpay() {
 }
 
 // Create Razorpay order
-app.post("/create-order", async (req, res) => {
+app.post("/create-order", verifyAuth, async (req, res) => {
   try {
     const { amount, currency = "INR", receipt, notes } = req.body || {};
 
@@ -161,7 +161,7 @@ app.post("/create-order", async (req, res) => {
 });
 
 // Verify payment signature
-app.post("/verify-payment", (req, res) => {
+app.post("/verify-payment", verifyAuth, (req, res) => {
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
       req.body || {};
@@ -439,7 +439,7 @@ app.get("/orders/:id", verifyAuth, async (req, res) => {
 
 // Admin: Get all orders (paginated)
 app.get("/admin/orders", verifyAuth, verifyAdmin, async (req, res) => {
-  console.log("hit /admin/orders");
+
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -524,7 +524,7 @@ app.get(
   verifyAuth,
   verifyAdmin,
   async (req, res) => {
-    console.log("hit");
+
     try {
       const { data: orders, error } = await supabase
         .from("orders")
@@ -536,10 +536,15 @@ app.get(
 
       const stats = {
         totalOrders: orders.length,
-        totalRevenue: orders.reduce((sum, order) => sum + order.amount, 0),
+        totalRevenue: orders.reduce((sum, order) => sum + Number(order.amount), 0),
         completedOrders: orders.filter((o) => o.status === "completed").length,
         pendingOrders: orders.filter((o) => o.status === "pending").length,
+        confirmedOrders: orders.filter((o) => o.status === "confirmed").length,
+        shippedOrders: orders.filter((o) => o.status === "shipped").length,
+        deliveredOrders: orders.filter((o) => o.status === "delivered").length,
+        awaitingPaymentOrders: orders.filter((o) => o.status === "awaiting_payment").length,
         failedOrders: orders.filter((o) => o.status === "failed").length,
+        cancelledOrders: orders.filter((o) => o.status === "cancelled").length,
       };
 
       return res.json(stats);
@@ -853,6 +858,101 @@ app.get("/admin/customers", verifyAuth, verifyAdmin, async (_req, res) => {
   }
 });
 
+// Admin: List all admin accounts
+app.get("/admin/admins", verifyAuth, verifyAdmin, async (req, res) => {
+  try {
+    const { data: profiles, error: profilesError } = await supabase
+      .from("user_profiles")
+      .select("user_id, email, name, phone, role, created_at, updated_at")
+      .eq("role", "admin")
+      .order("created_at", { ascending: false });
+
+    if (profilesError) {
+      return res.status(400).json({ error: profilesError.message });
+    }
+
+    return res.json({ admins: profiles || [] });
+  } catch (error) {
+    console.error("[admin] Error listing admins:", error);
+    return res.status(500).json({ error: "Failed to list admin users" });
+  }
+});
+
+// Admin: Create a new user/admin account (auto-confirmed)
+app.post("/admin/users/create", verifyAuth, verifyAdmin, async (req, res) => {
+  try {
+    const { email, password, role = "admin" } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    if (role !== "admin" && role !== "user") {
+      return res.status(400).json({ error: "Invalid role" });
+    }
+
+    // Create user via Supabase admin API
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { role }
+    });
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    const user = data.user;
+
+    // Create/Upsert the user profile
+    const { error: profileError } = await supabase
+      .from("user_profiles")
+      .upsert(
+        {
+          user_id: user.id,
+          email: user.email,
+          role: role,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (profileError) {
+      console.error("[admin] Profile creation failed:", profileError);
+      return res.status(500).json({ error: "User created, but profile failed: " + profileError.message });
+    }
+
+    return res.json({ success: true, user });
+  } catch (error) {
+    console.error("[admin] Error creating user:", error);
+    return res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+// Admin: Delete a user/admin account
+app.delete("/admin/users/:userId", verifyAuth, verifyAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (userId === req.user.id) {
+      return res.status(400).json({ error: "You cannot delete your own admin account" });
+    }
+
+    // Delete user from auth (this will automatically cascade-delete from user_profiles as well)
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    if (authError) {
+      return res.status(400).json({ error: authError.message });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("[admin] Error deleting user:", error);
+    return res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
 // Analytics tracking endpoint (public)
 app.post("/api/analytics/track", (req, res) => {
   try {
@@ -956,48 +1056,7 @@ app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => 
   }
 });
 
-// Public endpoint for auto-confirmed signups (bypasses Supabase email rate limits in dev)
-app.post("/auth/signup", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-
-    console.log(`[auth] Creating auto-confirmed user via admin client: ${email}`);
-
-    // Create user with email auto-confirmed using admin client
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
-
-    if (error) {
-      console.error("[auth] Supabase admin signup failed:", error);
-      return res.status(400).json({ error: error.message });
-    }
-
-    // Upsert corresponding profile in public.user_profiles
-    const { error: profileError } = await supabase
-      .from("user_profiles")
-      .upsert({
-        user_id: data.user.id,
-        email: email,
-        role: "user",
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "user_id" });
-
-    if (profileError) {
-      console.error("[auth] Error creating user profile:", profileError.message);
-    }
-
-    return res.json({ success: true, user: data.user });
-  } catch (error) {
-    console.error("[auth] Error during signup:", error);
-    return res.status(500).json({ error: "Signup failed" });
-  }
-});
+// (Duplicate /auth/signup route removed — handled at line 193)
 
 if (!isVercel) {
   const port = process.env.PORT || 5001;

@@ -32,9 +32,12 @@
     "zslhe7r0s9ikgfp77s6mkb",
     "b57jn9cgs4dih6j5abe7x",
     "jzsmesbnkwhyo9tmadpig",
-    "aog3o1nsg7ynbypffb09"
+    "aog3o1nsg7ynbypffb09",
+    "lwfp88vkjzs654bbhzlv6f",
+    "y0nm3ia3rfdj4i43c6tvi",
+    "7jqgxg08aunz3toqu4wkq"
   ],
-  "pageViews": 276,
+  "pageViews": 314,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -51,7 +54,8 @@
     "rings-feather-touch-amethyst": 1,
     "lockets-silver-cap-pendant-tiger-eye": 1,
     "rings-diamond-cut-oval-faced-green-jade": 1,
-    "lockets-thread-wrapped-pendant-ruby-matrix": 1
+    "lockets-thread-wrapped-pendant-ruby-matrix": 1,
+    "lockets-silver-wire-wrapped-pendant-rose-quartz": 1
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
@@ -137,6 +141,11 @@
       "name": "Ruby Matrix Thread Wrapped Pendant",
       "category": "Lockets / Pendants",
       "image": "https://www.maitriexport.com/cdn/shop/files/1-10_4e6874da-7ec5-41fd-8bf1-181e8fb39825.jpg?v=1699446728&width=800"
+    },
+    "lockets-silver-wire-wrapped-pendant-rose-quartz": {
+      "name": "Rose Quartz Silver Wire Wrapped Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1-29_369a016c-775c-415a-b608-b823018c16fc.jpg?v=1699446935&width=800"
     }
   }
 }

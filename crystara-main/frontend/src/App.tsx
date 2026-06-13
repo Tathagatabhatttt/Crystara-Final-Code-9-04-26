@@ -10,6 +10,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
 import SignupOfferPopup from "@/components/SignupOfferPopup";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import CategoryPage from "./pages/CategoryPage";
@@ -51,6 +52,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <ScrollToTop />
                 <WhatsAppButton />
                 <AnalyticsTracker />
                 <SignupOfferPopup />

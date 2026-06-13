@@ -36,7 +36,7 @@ const loadRazorpayScript = () => {
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
-  const { user, profile } = useAuth();
+  const { user, profile, session } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(user?.email || "");
@@ -123,6 +123,7 @@ const Checkout = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             amount: finalTotal,
@@ -155,6 +156,7 @@ const Checkout = () => {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
+                  Authorization: `Bearer ${session?.access_token}`,
                 },
                 body: JSON.stringify({
                   razorpay_order_id: response.razorpay_order_id,

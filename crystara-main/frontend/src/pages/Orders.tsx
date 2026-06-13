@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OrderItem {
     id: string;
@@ -25,7 +26,7 @@ interface Order {
     payment_id: string;
     amount: number;
     items: OrderItem[];
-    status: "pending" | "completed" | "failed" | "cancelled";
+    status: "pending" | "awaiting_payment" | "confirmed" | "shipped" | "delivered" | "completed" | "failed" | "cancelled";
     shipping_address?: {
         street?: string;
         city?: string;
@@ -59,6 +60,36 @@ const Orders = () => {
         }
     }, [user, session, profile?.role, authLoading, navigate]);
 
+    // Real-time subscription for order status changes
+    useEffect(() => {
+        if (!user) return;
+
+        const channel = supabase
+            .channel("orders-realtime")
+            .on(
+                "postgres_changes",
+                {
+                    event: "UPDATE",
+                    schema: "public",
+                    table: "orders",
+                    filter: `user_id=eq.${user.id}`,
+                },
+                (payload) => {
+                    const updated = payload.new as Order;
+                    setOrders((prev) =>
+                        prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o))
+                    );
+                    const label = updated.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                    toast.success(`Order #${updated.order_id} is now: ${label}`);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user]);
+
     const fetchOrders = async () => {
         if (!session?.access_token) return;
         try {
@@ -91,9 +122,15 @@ const Orders = () => {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "completed":
+            case "delivered":
                 return "bg-green-100 text-green-800";
             case "pending":
+            case "awaiting_payment":
                 return "bg-yellow-100 text-yellow-800";
+            case "confirmed":
+                return "bg-blue-100 text-blue-800";
+            case "shipped":
+                return "bg-indigo-100 text-indigo-800";
             case "failed":
                 return "bg-red-100 text-red-800";
             case "cancelled":

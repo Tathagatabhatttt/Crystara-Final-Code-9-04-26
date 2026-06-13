@@ -21,7 +21,8 @@ import {
   Users,
   CreditCard,
   MousePointerClick,
-  Heart
+  Heart,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +125,12 @@ interface Stats {
   totalRevenue: number;
   completedOrders: number;
   pendingOrders: number;
+  confirmedOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  awaitingPaymentOrders: number;
   failedOrders: number;
+  cancelledOrders: number;
 }
 
 interface PaginationData {
@@ -184,6 +190,14 @@ const AdminPanel = () => {
   const [verifyingRole, setVerifyingRole] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Admin Management States
+  const [admins, setAdmins] = useState<any[]>([]);
+  const [loadingAdmins, setLoadingAdmins] = useState(true);
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [deletingAdminId, setDeletingAdminId] = useState<string | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
 
@@ -210,6 +224,7 @@ const AdminPanel = () => {
       fetchOrders();
       fetchAnalytics();
       fetchCustomers();
+      fetchAdmins();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, statusFilter, currentPage]);
@@ -285,6 +300,105 @@ const AdminPanel = () => {
       toast.error(err instanceof Error ? err.message : "Failed to load customer details");
     } finally {
       setLoadingCustomers(false);
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      setLoadingAdmins(true);
+      const response = await fetch(`${API_URL}/admin/admins`, {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || "Failed to fetch admin list");
+      }
+
+      const data = await response.json();
+      setAdmins(data.admins || []);
+    } catch (err) {
+      console.error("Error fetching admins:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to load admin users");
+    } finally {
+      setLoadingAdmins(false);
+    }
+  };
+
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminEmail || !adminPassword) {
+      toast.error("Email and password are required");
+      return;
+    }
+    if (adminPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    try {
+      setCreatingAdmin(true);
+      const response = await fetch(`${API_URL}/admin/users/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          email: adminEmail,
+          password: adminPassword,
+          role: "admin",
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create admin");
+      }
+
+      toast.success("Admin user created successfully!");
+      setAdminEmail("");
+      setAdminPassword("");
+      fetchAdmins(); // Refresh list
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create admin");
+    } finally {
+      setCreatingAdmin(false);
+    }
+  };
+
+  const handleDeleteAdmin = async (adminId: string) => {
+    if (adminId === user?.id) {
+      toast.error("You cannot delete your own account!");
+      return;
+    }
+
+    if (!confirm("Are you sure you want to delete this admin account? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      setDeletingAdminId(adminId);
+      const response = await fetch(`${API_URL}/admin/users/${adminId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete admin");
+      }
+
+      toast.success("Admin account deleted successfully!");
+      fetchAdmins(); // Refresh list
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete admin");
+    } finally {
+      setDeletingAdminId(null);
     }
   };
 
@@ -490,7 +604,7 @@ const AdminPanel = () => {
 
         {/* Statistics Cards */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-2xl grid grid-cols-3 border border-border/40">
+          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-3xl grid grid-cols-4 border border-border/40">
             <TabsTrigger value="orders" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <ShoppingBag className="w-4 h-4" />
               Orders Management
@@ -503,6 +617,10 @@ const AdminPanel = () => {
               <Users className="w-4 h-4" />
               Customers
             </TabsTrigger>
+            <TabsTrigger value="admin-users" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <ShieldCheck className="w-4 h-4" />
+              Admin Management
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders" className="space-y-6 pt-2">
@@ -512,7 +630,7 @@ const AdminPanel = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-12"
+                className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-12"
               >
             {/* Total Orders */}
             <Card>
@@ -552,26 +670,7 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
 
-            {/* Completed Orders */}
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                    <CheckCircle className="w-6 h-6 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Completed
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {stats.completedOrders}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Pending Orders */}
+            {/* Pending */}
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
@@ -590,7 +689,83 @@ const AdminPanel = () => {
               </CardContent>
             </Card>
 
-            {/* Failed Orders */}
+            {/* Confirmed */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Confirmed
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stats.confirmedOrders}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Shipped */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+                    <Truck className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Shipped
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stats.shippedOrders}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Delivered */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg">
+                    <Package className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Delivered
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stats.deliveredOrders}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Completed */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Completed
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stats.completedOrders}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Failed */}
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
@@ -603,6 +778,25 @@ const AdminPanel = () => {
                     </p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">
                       {stats.failedOrders}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Cancelled */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                    <XCircle className="w-6 h-6 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Cancelled
+                    </p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {stats.cancelledOrders}
                     </p>
                   </div>
                 </div>
@@ -765,6 +959,45 @@ const AdminPanel = () => {
                                     >
                                       <Clock className="w-4 h-4 mr-2 text-yellow-600" />
                                       Mark as Pending
+                                    </DropdownMenuItem>
+                                  )}
+                                  {order.status !== "confirmed" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleUpdateOrderStatus(
+                                          order.id,
+                                          "confirmed",
+                                        )
+                                      }
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2 text-blue-600" />
+                                      Mark as Confirmed
+                                    </DropdownMenuItem>
+                                  )}
+                                  {order.status !== "shipped" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleUpdateOrderStatus(
+                                          order.id,
+                                          "shipped",
+                                        )
+                                      }
+                                    >
+                                      <Truck className="w-4 h-4 mr-2 text-indigo-600" />
+                                      Mark as Shipped
+                                    </DropdownMenuItem>
+                                  )}
+                                  {order.status !== "delivered" && (
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleUpdateOrderStatus(
+                                          order.id,
+                                          "delivered",
+                                        )
+                                      }
+                                    >
+                                      <Package className="w-4 h-4 mr-2 text-emerald-600" />
+                                      Mark as Delivered
                                     </DropdownMenuItem>
                                   )}
                                   {order.status !== "failed" && (
@@ -1177,7 +1410,145 @@ const AdminPanel = () => {
             </div>
           )}
         </TabsContent>
-        </Tabs>
+
+        <TabsContent value="admin-users" className="space-y-6 pt-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Create Admin Form */}
+            <Card className="bg-card border-border shadow-crystal lg:col-span-1">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg font-serif">Create Admin</CardTitle>
+                    <CardDescription>Register a new administrator account privately</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateAdmin} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Email Address</label>
+                    <Input
+                      type="email"
+                      placeholder="admin@crystara.co.in"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      required
+                      className="bg-background/50 border-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Password</label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      required
+                      className="bg-background/50 border-input"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Minimum 6 characters. The account will be automatically confirmed.</p>
+                  </div>
+                  <Button type="submit" disabled={creatingAdmin} className="w-full gap-2">
+                    {creatingAdmin ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <ShieldCheck className="w-4 h-4" />
+                        Create Admin Account
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* List Admins */}
+            <Card className="bg-card border-border shadow-crystal lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  <div>
+                    <CardTitle className="text-lg font-serif">Admin Accounts</CardTitle>
+                    <CardDescription>Manage administrators who have access to this dashboard</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingAdmins ? (
+                  <div className="flex justify-center items-center gap-3 py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="text-sm text-muted-foreground">Loading administrators...</span>
+                  </div>
+                ) : admins.length === 0 ? (
+                  <div className="text-center py-12 text-sm text-muted-foreground">
+                    No administrator accounts found.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Role</TableHead>
+                          <TableHead>Created At</TableHead>
+                          <TableHead className="text-right">Action</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {admins.map((adminItem) => {
+                          const isSelf = adminItem.user_id === user?.id;
+                          return (
+                            <TableRow key={adminItem.user_id} className={isSelf ? "bg-primary/5" : ""}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  <span>{adminItem.email}</span>
+                                  {isSelf && (
+                                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-primary border-primary">
+                                      You
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="capitalize">
+                                  {adminItem.role}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {adminItem.created_at ? new Date(adminItem.created_at).toLocaleDateString() : "N/A"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={isSelf || deletingAdminId === adminItem.user_id}
+                                  onClick={() => handleDeleteAdmin(adminItem.user_id)}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  {deletingAdminId === adminItem.user_id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
 
         {/* Order Details Modal */}
         {selectedOrder && (

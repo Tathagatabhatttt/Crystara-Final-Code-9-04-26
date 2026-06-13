@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -29,10 +29,11 @@ const TrackOrder = () => {
   const [email, setEmail] = useState("");
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Helper function to perform the actual track request
-  const performTrack = async (searchId: string, searchEmail: string) => {
-    setLoading(true);
+  const performTrack = async (searchId: string, searchEmail: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await fetch(`${API_URL}/orders/track`, {
         method: "POST",
@@ -48,19 +49,25 @@ const TrackOrder = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        toast.error(data.error || "No order found with these details. Please check and try again.");
-        setOrder(null);
+        if (!silent) toast.error(data.error || "No order found with these details. Please check and try again.");
+        if (!silent) setOrder(null);
       } else {
-        setOrder(data.order);
+        setOrder((prev: any) => {
+          if (prev && prev.status !== data.order.status) {
+            const label = data.order.status.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+            toast.success(`Order status updated: ${label}`);
+          }
+          return data.order;
+        });
         // Persist in localStorage for refresh support
         localStorage.setItem("lastTrackingId", searchId);
         localStorage.setItem("lastTrackingEmail", searchEmail);
       }
     } catch {
-      toast.error("Something went wrong. Please try again.");
-      setOrder(null);
+      if (!silent) toast.error("Something went wrong. Please try again.");
+      if (!silent) setOrder(null);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -84,6 +91,21 @@ const TrackOrder = () => {
       }
     }
   }, [searchParams]);
+
+  // Auto-refresh every 30 seconds when an order is actively being tracked
+  useEffect(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+
+    if (order && trackingId && email) {
+      pollRef.current = setInterval(() => {
+        performTrack(trackingId.trim(), email.trim(), true);
+      }, 30000);
+    }
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [order, trackingId, email]);
 
   const handleTrack = async (e: React.FormEvent) => {
     e.preventDefault();
