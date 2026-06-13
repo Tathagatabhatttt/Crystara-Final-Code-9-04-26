@@ -75,7 +75,10 @@ app.use(
         allowedOrigins.includes(origin) ||
         origin.endsWith(".vercel.app") ||
         /\.vercel\.app$/.test(origin) ||
-        origin.endsWith("crystara.co.in")
+        origin.endsWith("crystara.co.in") ||
+        origin.endsWith(".lovable.app") ||
+        origin.endsWith(".lovable.dev") ||
+        origin.endsWith(".gptengineer.run")
       ) {
         return callback(null, true);
       }
