@@ -11,12 +11,27 @@ import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api";
 import {
   clearCheckoutCoupon,
   markWelcomeOfferUsed,
   readCheckoutCoupon,
   WELCOME_COUPON_CODE,
 } from "@/lib/welcomeOffer";
+
+const loadRazorpayScript = () => {
+  return new Promise<boolean>((resolve) => {
+    if ((window as any).Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 
 const Checkout = () => {
@@ -85,74 +100,192 @@ const Checkout = () => {
   const finalTotal = priceAfterCoupon + shipping;
 
   const handlePlaceOrder = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!name || !phone || !address || !city || !state || !pincode) {
-    toast.error("Please fill all required fields");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const generatedOrderId =
-      "ORD_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
-
-    const generatedPaymentId =
-      paymentMethod === "cod"
-        ? `COD_${Date.now()}`
-        : `ONLINE_${Date.now()}`;
-
-    const { data, error } = await supabase
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        order_id: generatedOrderId,
-        payment_id: generatedPaymentId,
-        amount: finalTotal,
-        items: items as any,
-
-        shipping_address: {
-          name,
-          email,
-          phone,
-          address,
-          city,
-          state,
-          pincode,
-          payment_method: paymentMethod,
-        },
-
-        status:
-          paymentMethod === "cod"
-            ? "pending"
-            : "awaiting_payment",
-
-        created_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
-
-    if (error) throw error;
-
-    setTrackingId(data.id.slice(0, 8).toUpperCase());
-
-    setOrderPlaced(true);
-
-    if (checkoutCoupon?.code === WELCOME_COUPON_CODE && user?.id) {
-      markWelcomeOfferUsed(user.id);
+    if (!name || !phone || !address || !city || !state || !pincode) {
+      toast.error("Please fill all required fields");
+      return;
     }
-    clearCheckoutCoupon();
-    clearCart();
 
-    toast.success("Order placed successfully!");
-  } catch (err: any) {
-    console.error(err);
-    toast.error(err.message || "Failed to place order");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+
+    try {
+      if (paymentMethod === "online") {
+        const resScript = await loadRazorpayScript();
+        if (!resScript) {
+          toast.error("Razorpay SDK failed to load. Please check your internet connection.");
+          setLoading(false);
+          return;
+        }
+
+        // 1. Create order on backend
+        const response = await fetch(`${API_URL}/create-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: finalTotal,
+            currency: "INR",
+            receipt: `rcpt_${Date.now()}`,
+          }),
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Failed to create order on payment gateway");
+        }
+
+        const orderData = await response.json();
+        const { id: razorpayOrderId, key_id: razorpayKeyId } = orderData;
+
+        // 2. Open Razorpay Checkout
+        const options = {
+          key: razorpayKeyId,
+          amount: orderData.amount, // backend returns it in paise already
+          currency: orderData.currency || "INR",
+          name: "Crystara",
+          description: "Healing Crystals & Spiritual Products",
+          order_id: razorpayOrderId,
+          handler: async (response: any) => {
+            setLoading(true);
+            try {
+              // 3. Verify Payment
+              const verifyRes = await fetch(`${API_URL}/verify-payment`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
+
+              const verifyData = await verifyRes.json();
+              if (!verifyRes.ok || !verifyData.valid) {
+                throw new Error(verifyData.error || "Payment verification failed");
+              }
+
+              // 4. Save order to Supabase
+              const { data, error } = await supabase
+                .from("orders")
+                .insert({
+                  user_id: user.id,
+                  order_id: response.razorpay_order_id,
+                  payment_id: response.razorpay_payment_id,
+                  amount: finalTotal,
+                  items: items as any,
+                  shipping_address: {
+                    name,
+                    email,
+                    phone,
+                    address,
+                    city,
+                    state,
+                    pincode,
+                    payment_method: "online",
+                  },
+                  status: "confirmed",
+                  created_at: new Date().toISOString(),
+                })
+                .select("id")
+                .single();
+
+              if (error) throw error;
+
+              setTrackingId(data.id.slice(0, 8).toUpperCase());
+              setOrderPlaced(true);
+
+              if (checkoutCoupon?.code === WELCOME_COUPON_CODE && user?.id) {
+                markWelcomeOfferUsed(user.id);
+              }
+              clearCheckoutCoupon();
+              clearCart();
+              toast.success("Payment successful and order placed!");
+            } catch (err: any) {
+              console.error(err);
+              toast.error(err.message || "Failed to process payment verification");
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name,
+            email,
+            contact: phone,
+          },
+          notes: {
+            address: `${address}, ${city}, ${state} - ${pincode}`,
+          },
+          theme: {
+            color: "#7c3aed",
+          },
+          modal: {
+            ondismiss: () => {
+              setLoading(false);
+              toast.warning("Payment cancelled.");
+            },
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", (response: any) => {
+          toast.error(`Payment failed: ${response.error.description}`);
+          setLoading(false);
+        });
+        rzp.open();
+      } else {
+        // COD Order Flow
+        const generatedOrderId =
+          "ORD_" + Date.now() + "_" + Math.floor(Math.random() * 10000);
+
+        const generatedPaymentId = `COD_${Date.now()}`;
+
+        const { data, error } = await supabase
+          .from("orders")
+          .insert({
+            user_id: user.id,
+            order_id: generatedOrderId,
+            payment_id: generatedPaymentId,
+            amount: finalTotal,
+            items: items as any,
+            shipping_address: {
+              name,
+              email,
+              phone,
+              address,
+              city,
+              state,
+              pincode,
+              payment_method: "cod",
+            },
+            status: "pending",
+            created_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        setTrackingId(data.id.slice(0, 8).toUpperCase());
+        setOrderPlaced(true);
+
+        if (checkoutCoupon?.code === WELCOME_COUPON_CODE && user?.id) {
+          markWelcomeOfferUsed(user.id);
+        }
+        clearCheckoutCoupon();
+        clearCart();
+        toast.success("Order placed successfully!");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to place order");
+    } finally {
+      setLoading(false);
+    }
+  };
   if (orderPlaced) {
     return (
       <div className="min-h-screen bg-background">
@@ -226,8 +359,8 @@ const Checkout = () => {
                       <input type="radio" name="payment" value="online" checked={paymentMethod === "online"} onChange={() => setPaymentMethod("online")} className="accent-primary" />
                       <Smartphone size={20} className="text-primary" />
                       <div>
-                        <p className="font-medium text-sm">Online Payment (UPI)</p>
-                        <p className="text-xs text-muted-foreground">Pay via UPI / Google Pay / PhonePe</p>
+                        <p className="font-medium text-sm">Pay Online</p>
+                        <p className="text-xs text-muted-foreground">UPI, Credit/Debit Cards, Netbanking, Wallets</p>
                       </div>
                     </label>
                   </div>

@@ -139,11 +139,24 @@ app.post("/create-order", async (req, res) => {
       notes: notes || {},
     });
 
-    return res.json(order);
+    return res.json({
+      ...order,
+      key_id: keyId
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.error("[razorpay] Error creating order:", error);
-    return res.status(500).json({ error: "Failed to create order" });
+    let errMsg = "Failed to create order";
+    if (error && typeof error === "object") {
+      if (error.error && error.error.description) {
+        errMsg = error.error.description;
+      } else if (error.description) {
+        errMsg = error.description;
+      } else if (error.message) {
+        errMsg = error.message;
+      }
+    }
+    return res.status(500).json({ error: errMsg });
   }
 });
 
