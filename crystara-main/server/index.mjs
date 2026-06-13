@@ -609,11 +609,19 @@ app.get("/onboarding/status", verifyAuth, async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("user_profiles")
-      .select("name")
+      .select("name, role")
       .eq("user_id", req.user.id)
       .single();
 
-    if (error || !data?.name) {
+    if (error) {
+      return res.json({ isOnboarded: false });
+    }
+
+    if (data?.role === "admin") {
+      return res.json({ isOnboarded: true });
+    }
+
+    if (!data?.name) {
       return res.json({ isOnboarded: false });
     }
 
