@@ -36,8 +36,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isOnboarded, setIsOnboarded] = useState<boolean | null>(null);
+  // Initialise from localStorage so we don't flash the onboarding form on reload
+  const [isOnboarded, setIsOnboardedState] = useState<boolean | null>(() => {
+    const cached = localStorage.getItem("crystara-onboarded");
+    return cached === "true" ? true : cached === "false" ? false : null;
+  });
   const [profile, setProfile] = useState<any>(null);
+
+  // Wrapper that also persists to localStorage
+  const setIsOnboarded = (val: boolean) => {
+    setIsOnboardedState(val);
+    localStorage.setItem("crystara-onboarded", String(val));
+  };
 
   const fetchProfile = async () => {
     if (!session?.access_token) return;
@@ -65,6 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const token = accessToken || session?.access_token;
     if (!token) return false;
 
+    // If we already have a cached "true" value, return it immediately.
+    // This prevents the onboarding flash on page reload.
+    const cached = localStorage.getItem("crystara-onboarded");
+    if (cached === "true") {
+      setIsOnboardedState(true);
+      return true;
+    }
+
     try {
       const response = await fetch(
         `${API_URL}/onboarding/status`,
@@ -74,12 +92,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
         },
       );
-      if (!response.ok) return false;
+      if (!response.ok) {
+        // On network error, fall back to cache rather than forcing onboarding
+        if (cached !== null) {
+          const cachedBool = cached === "true";
+          setIsOnboardedState(cachedBool);
+          return cachedBool;
+        }
+        return false;
+      }
       const data = await response.json();
-      console.log("Onboarding status response:", data);
       setIsOnboarded(data.isOnboarded);
       return data.isOnboarded;
     } catch {
+      // Network failure — use cache to avoid losing the session
+      if (cached !== null) {
+        const cachedBool = cached === "true";
+        setIsOnboardedState(cachedBool);
+        return cachedBool;
+      }
       return false;
     }
   };
@@ -186,10 +217,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     localStorage.removeItem("crystara-cart");
+    localStorage.removeItem("crystara-onboarded");
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
     setProfile(null);
+    setIsOnboardedState(null);
   };
 
   return (
