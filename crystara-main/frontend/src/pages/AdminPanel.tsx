@@ -60,6 +60,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getProductById } from "@/data/products";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AnalyticsProductItem {
   id: string;
@@ -228,6 +229,46 @@ const AdminPanel = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, statusFilter, currentPage]);
+
+  // Real-time subscription for admin order updates
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel("admin-orders-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            const newOrder = payload.new as Order;
+            toast.success(`New order #${newOrder.order_id} received!`);
+            fetchOrders();
+            fetchStats();
+          } else if (payload.eventType === "UPDATE") {
+            const updated = payload.new as Order;
+            setOrders((prev) =>
+              prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o))
+            );
+            
+            // Only toast if we didn't just update it ourselves
+            if (updated.id !== updatingOrderId) {
+              const label = updated.status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+              toast.info(`Order #${updated.order_id} status changed to ${label}`);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, updatingOrderId]);
 
   const fetchAnalytics = async () => {
     try {

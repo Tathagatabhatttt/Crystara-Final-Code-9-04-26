@@ -5,7 +5,15 @@ const ScrollToTop = () => {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    window.scrollTo(0, 0);
+    // Scroll instantly on route change
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    
+    // Fallback for when content loads asynchronously causing layout shifts
+    const timeoutId = setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [pathname]);
 
   return null;
