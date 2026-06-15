@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { sanityClient } from "@/lib/sanity";
 import type { ProductCategory, ProductSubCategory, ProductVariant } from "@/data/products";
+import { supabase } from "@/integrations/supabase/client";
 
 // GROQ query to fetch all products with their referenced category and sub-category
 const ALL_PRODUCTS_QUERY = `*[_type == "product"]{
@@ -55,8 +56,55 @@ async function fetchProductCatalog(): Promise<ProductCategory[]> {
 }
 
 async function fetchAllProducts(): Promise<FlatProduct[]> {
-    const data = await sanityClient.fetch<FlatProduct[]>(ALL_PRODUCTS_QUERY);
-    return data;
+    let sanityProducts: FlatProduct[] = [];
+    try {
+        sanityProducts = await sanityClient.fetch<FlatProduct[]>(ALL_PRODUCTS_QUERY);
+    } catch (err) {
+        console.error("Sanity fetch failed:", err);
+    }
+
+    let supabaseProducts: FlatProduct[] = [];
+    try {
+        const { data, error } = await supabase
+            .from("products")
+            .select("*");
+        
+        if (error) throw error;
+        
+        if (data) {
+            supabaseProducts = data.map((row: any) => ({
+                id: row.id,
+                name: row.name,
+                stone: row.stone || "",
+                price: Number(row.price),
+                originalPrice: row.original_price ? Number(row.original_price) : undefined,
+                benefit: row.benefit || "",
+                image: row.image || "",
+                galleryImages: Array.isArray(row.gallery_images) ? row.gallery_images : [],
+                featured: row.featured || false,
+                category: row.category,
+                categorySlug: row.category_slug,
+                subCategory: row.sub_category || "",
+                subCategorySlug: row.sub_category_slug || "",
+            }));
+        }
+    } catch (err) {
+        console.error("Supabase products fetch failed:", err);
+    }
+
+    // Merge or concatenate both catalogs
+    // If they have the same ID, Supabase products take precedence so the client can override them!
+    const merged = [...sanityProducts];
+    supabaseProducts.forEach((sp) => {
+        const idx = merged.findIndex((p) => p.id === sp.id);
+        if (idx !== -1) {
+            merged[idx] = sp;
+        } else {
+            merged.push(sp);
+        }
+    });
+
+    return merged;
 }
 
 export function useProductCatalog() {

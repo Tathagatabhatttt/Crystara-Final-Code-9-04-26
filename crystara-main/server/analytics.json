@@ -40,9 +40,11 @@
     "s2tizerskkq8h8vl2tr4d",
     "47pvsjpwp96rs438td4j6d",
     "0p3y4eh22w2uttiqi5h86",
-    "o0iulahsgl8cms0i8m5fv"
+    "o0iulahsgl8cms0i8m5fv",
+    "9sbowzdgf2f6kdxsv6r6kn",
+    "zdawjwkvw251xcc6cmbwn"
   ],
-  "pageViews": 365,
+  "pageViews": 395,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -63,13 +65,15 @@
     "lockets-silver-wire-wrapped-pendant-rose-quartz": 1,
     "bracelets-beads-bracelet-amethyst": 4,
     "rings-round-gem-stone-amethyst": 2,
-    "rings-heart-shaped-citrine": 1
+    "rings-heart-shaped-citrine": 1,
+    "rings-boho-green-jade": 1
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
     "frames-pyrite-multi-frame-shiv-shakti": 1,
     "rings-round-gem-stone-amethyst": 2,
-    "rings-heart-shaped-citrine": 1
+    "rings-heart-shaped-citrine": 1,
+    "rings-boho-green-jade": 1
   },
   "productMetadata": {
     "pyramids-orgone-pyramid-money-magnet": {
@@ -171,6 +175,11 @@
       "name": "Citrine Heart Shaped",
       "category": "Rings",
       "image": "https://www.maitriexport.com/cdn/shop/files/1_4fba65bb-1f0a-41f0-a5a7-45402fee3f64.png?v=1709876459&width=800"
+    },
+    "rings-boho-green-jade": {
+      "name": "Green Jade Boho",
+      "category": "Rings",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1-100.jpg?v=1699449319&width=800"
     }
   }
 }

@@ -187,7 +187,7 @@ const Checkout = () => {
   const shipping = priceAfterCoupon >= 999 ? 0 : 99;
   const finalTotal = priceAfterCoupon + shipping;
 
-  const PARTIAL_COD_PERCENT = 30; // 30% advance
+  const PARTIAL_COD_PERCENT = 20; // 20% advance
   const codAdvance = Math.round(finalTotal * (PARTIAL_COD_PERCENT / 100));
   const codBalance = finalTotal - codAdvance;
 
@@ -507,7 +507,7 @@ const Checkout = () => {
                   {paymentMethod === "cod" && (
                     <div className="border-t border-border/60 pt-2 mt-2 space-y-1 text-xs">
                       <div className="flex justify-between font-medium text-foreground">
-                        <span>COD Advance (30% to pay now)</span>
+                        <span>COD Advance ({PARTIAL_COD_PERCENT}% to pay now)</span>
                         <span>₹{codAdvance.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between text-muted-foreground">

@@ -494,18 +494,22 @@ app.get("/admin/orders", verifyAuth, verifyAdmin, async (req, res) => {
   }
 });
 
-// Admin: Update order status
+// Admin: Update order details (status, shipping_address)
 app.patch("/admin/orders/:id", verifyAuth, verifyAdmin, async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, shipping_address } = req.body;
 
-    if (!status) {
-      return res.status(400).json({ error: "Status is required" });
+    const updates = {};
+    if (status !== undefined) updates.status = status;
+    if (shipping_address !== undefined) updates.shipping_address = shipping_address;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "No fields to update" });
     }
 
     const { data, error } = await supabase
       .from("orders")
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({ ...updates, updated_at: new Date().toISOString() })
       .eq("id", req.params.id)
       .select();
 
@@ -518,6 +522,25 @@ app.patch("/admin/orders/:id", verifyAuth, verifyAdmin, async (req, res) => {
     // eslint-disable-next-line no-console
     console.error("[admin] Error updating order:", error);
     return res.status(500).json({ error: "Failed to update order" });
+  }
+});
+
+// Admin: Delete an order record
+app.delete("/admin/orders/:id", verifyAuth, verifyAdmin, async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", req.params.id);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("[admin] Error deleting order:", error);
+    return res.status(500).json({ error: "Failed to delete order" });
   }
 });
 
