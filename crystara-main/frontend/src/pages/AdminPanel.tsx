@@ -891,9 +891,15 @@ const AdminPanel = () => {
         },
       });
 
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to delete order");
+        let errMsg = "Failed to delete order";
+        try {
+          const errorData = await response.json();
+          errMsg = errorData.error || errMsg;
+        } catch (_) {
+          errMsg = `Failed to delete order (Status: ${response.status})`;
+        }
+        throw new Error(errMsg);
       }
 
       toast.success("Order deleted successfully!");
@@ -955,10 +961,18 @@ const AdminPanel = () => {
         }
       );
 
-      const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update shipping address");
+        let errMsg = "Failed to update shipping address";
+        try {
+          const errorData = await response.json();
+          errMsg = errorData.error || errMsg;
+        } catch (_) {
+          errMsg = `Failed to update shipping address (Status: ${response.status})`;
+        }
+        throw new Error(errMsg);
       }
+
+      const data = await response.json();
 
       setOrders(
         orders.map((order) => (order.id === orderId ? data.order : order))
