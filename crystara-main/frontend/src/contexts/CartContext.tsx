@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { trackEvent } from "@/services/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { API_URL } from "@/lib/api";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export interface CartItem {
   id: string;
@@ -17,7 +18,7 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
+  addToCart: (item: Omit<CartItem, "quantity">, quantity?: number, redirectPath?: string) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -30,6 +31,8 @@ const PENDING_CART_ITEM_KEY = "crystara-pending-cart-item";
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { session, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const hasLoadedRemoteCart = useRef(false);
   const [items, setItems] = useState<CartItem[]>(() => {
     try {
@@ -171,11 +174,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [session?.access_token, profile?.role]);
 
-  const addToCart = (item: Omit<CartItem, "quantity">, quantity = 1) => {
+  const addToCart = (item: Omit<CartItem, "quantity">, quantity = 1, redirectPath?: string) => {
     if (!session?.access_token) {
       sessionStorage.setItem(PENDING_CART_ITEM_KEY, JSON.stringify({ item, quantity }));
       toast.info("Create an account to add this product to your cart and unlock 10% off.");
-      window.location.href = "/auth?mode=signup&offer=welcome10";
+      const nextRedirect = redirectPath || (location.pathname + location.search);
+      navigate(`/auth?mode=signup&offer=welcome10&redirect=${encodeURIComponent(nextRedirect)}`);
       return;
     }
 

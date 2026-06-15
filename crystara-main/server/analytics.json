@@ -37,9 +37,11 @@
     "y0nm3ia3rfdj4i43c6tvi",
     "7jqgxg08aunz3toqu4wkq",
     "slw2hw5apzdjawsapdsdis",
-    "s2tizerskkq8h8vl2tr4d"
+    "s2tizerskkq8h8vl2tr4d",
+    "47pvsjpwp96rs438td4j6d",
+    "0p3y4eh22w2uttiqi5h86"
   ],
-  "pageViews": 322,
+  "pageViews": 353,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -57,11 +59,16 @@
     "lockets-silver-cap-pendant-tiger-eye": 1,
     "rings-diamond-cut-oval-faced-green-jade": 1,
     "lockets-thread-wrapped-pendant-ruby-matrix": 1,
-    "lockets-silver-wire-wrapped-pendant-rose-quartz": 1
+    "lockets-silver-wire-wrapped-pendant-rose-quartz": 1,
+    "bracelets-beads-bracelet-amethyst": 4,
+    "rings-round-gem-stone-amethyst": 1,
+    "rings-heart-shaped-citrine": 1
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
-    "frames-pyrite-multi-frame-shiv-shakti": 1
+    "frames-pyrite-multi-frame-shiv-shakti": 1,
+    "rings-round-gem-stone-amethyst": 1,
+    "rings-heart-shaped-citrine": 1
   },
   "productMetadata": {
     "pyramids-orgone-pyramid-money-magnet": {
@@ -148,6 +155,21 @@
       "name": "Rose Quartz Silver Wire Wrapped Pendant",
       "category": "Lockets / Pendants",
       "image": "https://www.maitriexport.com/cdn/shop/files/1-29_369a016c-775c-415a-b608-b823018c16fc.jpg?v=1699446935&width=800"
+    },
+    "bracelets-beads-bracelet-amethyst": {
+      "name": "Amethyst Beads Bracelet",
+      "category": "Bracelets",
+      "image": "https://cdn.sanity.io/images/24b9t1zn/production/0ebf63c2a532a3981ead150d9b4a947c605825f6-503x504.jpg"
+    },
+    "rings-round-gem-stone-amethyst": {
+      "name": "Amethyst Round Gem Stone",
+      "category": "Rings",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1_308057d3-4129-45e8-ab10-1c314c4240a3.png?v=1723792481&width=800"
+    },
+    "rings-heart-shaped-citrine": {
+      "name": "Citrine Heart Shaped",
+      "category": "Rings",
+      "image": "https://www.maitriexport.com/cdn/shop/files/1_4fba65bb-1f0a-41f0-a5a7-45402fee3f64.png?v=1709876459&width=800"
     }
   }
 }

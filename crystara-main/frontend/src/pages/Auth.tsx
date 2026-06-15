@@ -24,6 +24,7 @@ import { grantWelcomeOffer, WELCOME_COUPON_CODE } from "@/lib/welcomeOffer";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get("redirect") || "/profile";
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -60,9 +61,9 @@ const Auth = () => {
     }
 
     if (isOnboarded === true) {
-      navigate("/profile");
+      navigate(redirectUrl);
     }
-  }, [authLoading, user, isOnboarded, showOnboarding, navigate]);
+  }, [authLoading, user, isOnboarded, showOnboarding, navigate, redirectUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +82,7 @@ const Auth = () => {
             : false;
 
           if (onboarded) {
-            navigate("/profile");
+            navigate(redirectUrl);
           } else {
             setShowOnboarding(true);
           }
@@ -105,7 +106,7 @@ const Auth = () => {
             const onboarded = await checkOnboardingStatus(session.access_token);
             setShowOnboarding(!onboarded);
             if (onboarded) {
-              navigate("/profile");
+              navigate(redirectUrl);
             }
           } else {
             toast.success(
@@ -245,7 +246,7 @@ const Auth = () => {
         toast.success("Welcome!");
         const onboarded = await checkOnboardingStatus(data.session.access_token);
         if (onboarded) {
-          navigate("/profile");
+          navigate(redirectUrl);
         } else {
           setShowOnboarding(true);
         }
@@ -274,7 +275,7 @@ const Auth = () => {
             <OnboardingForm
               onComplete={() => {
                 setShowOnboarding(false);
-                navigate("/profile");
+                navigate(redirectUrl);
               }}
             />
           </motion.div>

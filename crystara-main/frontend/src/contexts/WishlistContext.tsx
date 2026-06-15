@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getProductById } from "@/integrations/supabase/types";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export interface WishlistItem {
   id: string;
@@ -39,6 +40,8 @@ export const WishlistProvider = ({
   children: ReactNode;
 }) => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const [items, setItems] = useState<WishlistItem[]>([]);
 
@@ -51,6 +54,8 @@ export const WishlistProvider = ({
 
     fetchWishlist();
   }, [user]);
+
+
 
   const fetchWishlist = async () => {
     if (!user) return;
@@ -95,7 +100,9 @@ export const WishlistProvider = ({
     }
 
     if (!user) {
-      toast.error("Please login first");
+      sessionStorage.setItem("crystara-pending-wishlist-item", JSON.stringify(item));
+      toast.info("Create an account to add this product to your wishlist.");
+      navigate(`/auth?mode=signup&redirect=${encodeURIComponent(location.pathname + location.search)}`);
       return;
     }
 
@@ -159,6 +166,23 @@ export const WishlistProvider = ({
       await addToWishlist(item);
     }
   };
+
+  // Restore pending wishlist item after login
+  useEffect(() => {
+    if (!user || profile?.role === "admin") return;
+
+    const rawPendingItem = sessionStorage.getItem("crystara-pending-wishlist-item");
+    if (!rawPendingItem) return;
+
+    try {
+      const pendingItem = JSON.parse(rawPendingItem) as WishlistItem;
+      addToWishlist(pendingItem);
+    } catch (error) {
+      console.error("Failed to restore pending wishlist item:", error);
+    } finally {
+      sessionStorage.removeItem("crystara-pending-wishlist-item");
+    }
+  }, [user, profile, addToWishlist]);
 
   return (
     <WishlistContext.Provider

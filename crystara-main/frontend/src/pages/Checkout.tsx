@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Package, CreditCard, Banknote, ArrowLeft, CheckCircle2, Smartphone } from "lucide-react";
@@ -36,7 +36,7 @@ const loadRazorpayScript = () => {
 
 const Checkout = () => {
   const { items, totalPrice, clearCart } = useCart();
-  const { user, profile, session } = useAuth();
+  const { user, profile, session, fetchProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState(user?.email || "");
@@ -49,6 +49,94 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [trackingId, setTrackingId] = useState("");
+
+  const [addressesList, setAddressesList] = useState<any[]>([]);
+  const [saveAsPrimary, setSaveAsPrimary] = useState(true);
+
+  // Load saved addresses and pre-fill form
+  useEffect(() => {
+    if (profile) {
+      const list: any[] = [];
+      if (profile.address_street || profile.address_city) {
+        list.push({
+          id: "primary",
+          label: "Primary Address",
+          street: profile.address_street || "",
+          city: profile.address_city || "",
+          state: profile.address_state || "",
+          pincode: profile.address_pincode || "",
+          name: profile.name || "",
+          phone: profile.phone || "",
+        });
+      }
+      if (profile.saved_addresses && Array.isArray(profile.saved_addresses)) {
+        profile.saved_addresses.forEach((addr: any) => {
+          list.push({
+            id: addr.id,
+            label: addr.label || `${addr.type.charAt(0).toUpperCase() + addr.type.slice(1)} Address`,
+            street: addr.street || "",
+            city: addr.city || "",
+            state: addr.state || "",
+            pincode: addr.pincode || "",
+            name: profile.name || "",
+            phone: profile.phone || "",
+          });
+        });
+      }
+      setAddressesList(list);
+
+      // Pre-fill form fields
+      const primary = list.find((a) => a.id === "primary") || list[0];
+      if (primary) {
+        setName(primary.name);
+        setPhone(primary.phone);
+        setAddress(primary.street);
+        setCity(primary.city);
+        setState(primary.state);
+        setPincode(primary.pincode);
+      } else {
+        if (profile.name) setName(profile.name);
+        if (profile.phone) setPhone(profile.phone);
+      }
+    }
+  }, [profile]);
+
+  const handleSelectAddress = (addressId: string) => {
+    const selected = addressesList.find((addr) => addr.id === addressId);
+    if (selected) {
+      setName(selected.name);
+      setPhone(selected.phone);
+      setAddress(selected.street);
+      setCity(selected.city);
+      setState(selected.state);
+      setPincode(selected.pincode);
+    }
+  };
+
+  const saveAddressToProfile = async () => {
+    if (saveAsPrimary && session?.access_token) {
+      try {
+        await fetch(`${API_URL}/profile`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            name,
+            phone,
+            address_street: address,
+            address_city: city,
+            address_state: state,
+            address_pincode: pincode,
+          }),
+        });
+        fetchProfile();
+      } catch (error) {
+        console.error("Failed to save address to profile:", error);
+      }
+    }
+  };
 
   if (profile?.role === "admin") {
     return (
@@ -200,6 +288,8 @@ const Checkout = () => {
               setTrackingId(data.id.slice(0, 8).toUpperCase());
               setOrderPlaced(true);
 
+              await saveAddressToProfile();
+
               if (checkoutCoupon?.code === WELCOME_COUPON_CODE && user?.id) {
                 markWelcomeOfferUsed(user.id);
               }
@@ -274,6 +364,8 @@ const Checkout = () => {
         setTrackingId(data.id.slice(0, 8).toUpperCase());
         setOrderPlaced(true);
 
+        await saveAddressToProfile();
+
         if (checkoutCoupon?.code === WELCOME_COUPON_CODE && user?.id) {
           markWelcomeOfferUsed(user.id);
         }
@@ -334,7 +426,26 @@ const Checkout = () => {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="md:col-span-2 space-y-6">
                 <div className="bg-card p-5 rounded-xl border border-border">
-                  <h2 className="font-serif font-semibold text-lg mb-4 flex items-center gap-2"><Package size={18} /> Shipping Details</h2>
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <h2 className="font-serif font-semibold text-lg flex items-center gap-2">
+                      <Package size={18} /> Shipping Details
+                    </h2>
+                    {addressesList.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium">Use address:</span>
+                        <select
+                          onChange={(e) => handleSelectAddress(e.target.value)}
+                          className="text-xs p-1.5 rounded-lg border border-border bg-background font-medium focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          {addressesList.map((addr) => (
+                            <option key={addr.id} value={addr.id}>
+                              {addr.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} required />
                     <Input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -344,6 +455,25 @@ const Checkout = () => {
                     <Input placeholder="State *" value={state} onChange={(e) => setState(e.target.value)} required />
                   </div>
                   <Textarea placeholder="Full Address *" value={address} onChange={(e) => setAddress(e.target.value)} required className="mt-4" rows={3} />
+
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={saveAsPrimary}
+                        onChange={(e) => setSaveAsPrimary(e.target.checked)}
+                        className="rounded border-border text-primary focus:ring-primary h-4 w-4"
+                      />
+                      <span className="text-xs font-medium text-muted-foreground">Save as primary default address</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/addresses")}
+                      className="text-xs text-primary hover:underline font-medium"
+                    >
+                      Manage saved addresses
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-card p-5 rounded-xl border border-border">

@@ -160,16 +160,14 @@ const ProductDetail = () => {
       toast.error("Admins cannot buy products. Please log in as a customer.");
       return;
     }
-    if (!user) {
-      toast.error("Please sign in first to buy");
-      navigate("/auth");
-      return;
-    }
     addToCart({
       id: product.id, name: `${product.name} ${product.subCategory}`, price: product.price,
       originalPrice: product.originalPrice, image: product.image, category: product.category, subCategory: product.subCategory,
-    }, quantity);
-    navigate("/checkout");
+    }, quantity, "/checkout");
+    
+    if (user) {
+      navigate("/checkout");
+    }
   };
 
   const handleToggleWishlist = () => {
