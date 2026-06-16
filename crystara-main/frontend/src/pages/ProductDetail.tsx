@@ -251,13 +251,30 @@ const ProductDetail = () => {
               </div>
 
               {/* Quantity */}
-              <div className="flex items-center gap-3 mb-4">
-                <span className="font-medium text-sm">Quantity:</span>
-                <div className="flex items-center border border-border rounded-lg">
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus size={14} /></Button>
-                  <span className="w-10 text-center font-medium text-sm">{quantity}</span>
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(quantity + 1)}><Plus size={14} /></Button>
+              <div className="flex flex-col gap-1 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium text-sm">Quantity:</span>
+                  <div className="flex items-center border border-border rounded-lg">
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(Math.max(1, quantity - 1))}><Minus size={14} /></Button>
+                    <span className="w-10 text-center font-medium text-sm">{quantity}</span>
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setQuantity(quantity + 1)}><Plus size={14} /></Button>
+                  </div>
                 </div>
+                {product.stock !== undefined && product.stock !== null && (
+                  <div className="text-xs font-semibold mt-1">
+                    {product.stock <= 0 ? (
+                      <span className="text-red-500 font-bold uppercase tracking-wider bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded w-fit inline-block">Out of stock</span>
+                    ) : product.stock <= 10 ? (
+                      <span className="text-amber-500 flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded w-fit animate-pulse inline-flex">
+                        <Zap className="w-3 h-3 text-amber-500" /> Only {product.stock} pieces left!
+                      </span>
+                    ) : (
+                      <span className="text-green-600 dark:text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded w-fit inline-block">
+                        {product.stock} pieces available
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Admin Notice */}
@@ -274,14 +291,14 @@ const ProductDetail = () => {
                   size="lg" 
                   className="relative h-14 overflow-hidden rounded-full border border-primary/30 bg-[linear-gradient(135deg,hsl(var(--crystal-obsidian)),hsl(var(--primary)),hsl(var(--accent)))] px-5 text-sm font-semibold uppercase tracking-[0.14em] text-primary-foreground shadow-[0_18px_38px_-18px_hsl(var(--primary)/0.9)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_22px_48px_-18px_hsl(var(--accent)/0.9)] disabled:translate-y-0 disabled:opacity-50"
                   onClick={handleBuyNow}
-                  disabled={isAdmin}
+                  disabled={isAdmin || (product.stock !== undefined && product.stock <= 0)}
                 >
                   <span className="absolute inset-0 bg-white/10 opacity-0 transition-opacity duration-300 hover:opacity-100" />
                   <span className="relative flex items-center justify-center gap-3">
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/18">
                       <Zap size={16} />
                     </span>
-                    Buy Now
+                    {product.stock !== undefined && product.stock <= 0 ? "Out of Stock" : "Buy Now"}
                   </span>
                 </Button>
                 <Button 
@@ -289,7 +306,7 @@ const ProductDetail = () => {
                   variant="outline" 
                   className="h-14 rounded-full border-primary/35 bg-background/70 px-5 text-sm font-semibold uppercase tracking-[0.14em] text-foreground shadow-[0_14px_32px_-22px_hsl(var(--crystal-obsidian))] backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-primary hover:bg-primary/8 hover:text-primary disabled:translate-y-0 disabled:opacity-50"
                   onClick={handleAddToCart}
-                  disabled={isAdmin}
+                  disabled={isAdmin || (product.stock !== undefined && product.stock <= 0)}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <ShoppingBag size={16} />

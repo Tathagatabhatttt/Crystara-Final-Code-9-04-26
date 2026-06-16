@@ -46,9 +46,11 @@
     "1kt3e9igpfjyzthzqwudx",
     "hk6d33bk2wb1k6jchd3u3r",
     "zh67wudg82mcgg2mqoatm",
-    "1ylovlzvwziy5v7z58ofpj"
+    "1ylovlzvwziy5v7z58ofpj",
+    "pm7uu94xaalnmv4p98ihl",
+    "hh2fprot84l147tbnfo5cd"
   ],
-  "pageViews": 416,
+  "pageViews": 437,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -58,7 +60,7 @@
     "rings-round-gem-stone-citrine": 1576,
     "rings-heart-shaped-tiger-eye": 2876,
     "bracelets-beads-bracelet-hematite": 16269,
-    "bracelets-beads-bracelet-money-magnet": 166,
+    "bracelets-beads-bracelet-money-magnet": 167,
     "bracelets-beads-bracelet-lapis": 323,
     "lockets-raw-stone-pendant-amethyst": 1,
     "lockets-silver-cap-pendant-amethyst": 1,
@@ -70,7 +72,9 @@
     "bracelets-beads-bracelet-amethyst": 4,
     "rings-round-gem-stone-amethyst": 2,
     "rings-heart-shaped-citrine": 1,
-    "rings-boho-green-jade": 1
+    "rings-boho-green-jade": 1,
+    "lockets-tortoise-shaped-pendant-rose-quartz": 1,
+    "lockets-raw-stone-pendant-tiger-eye": 1
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
@@ -123,7 +127,7 @@
     "bracelets-beads-bracelet-money-magnet": {
       "name": "Money Magnet Beads Bracelet",
       "category": "Bracelets",
-      "image": "https://www.maitriexport.com/cdn/shop/files/10mm-round-beads-stretchable-bracelet-979669.jpg?v=1712657034&width=800"
+      "image": "https://cdn.sanity.io/images/24b9t1zn/production/29cf2ed76854933bbcef0017beb401dede75b503-506x506.jpg"
     },
     "bracelets-beads-bracelet-lapis": {
       "name": "Lapis Beads Bracelet",
@@ -184,6 +188,16 @@
       "name": "Green Jade Boho",
       "category": "Rings",
       "image": "https://www.maitriexport.com/cdn/shop/files/1-100.jpg?v=1699449319&width=800"
+    },
+    "lockets-tortoise-shaped-pendant-rose-quartz": {
+      "name": "Rose Quartz Tortoise Shaped Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://cdn.sanity.io/images/24b9t1zn/production/a2095daeb1d8f3fb204ce64359ad6872618eb6a8-757x1023.jpg"
+    },
+    "lockets-raw-stone-pendant-tiger-eye": {
+      "name": "Tiger Eye Raw Stone Pendant",
+      "category": "Lockets / Pendants",
+      "image": "https://www.maitriexport.com/cdn/shop/files/2-9_a7cb4b62-9086-49bf-a114-50a855cf324f.jpg?v=1699446728&width=800"
     }
   }
 }

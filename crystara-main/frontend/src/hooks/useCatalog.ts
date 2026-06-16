@@ -17,7 +17,7 @@ function mergeProducts(
 ): FlatProduct[] {
   const sanityMap = new Map(sanityProducts.map((product) => [product.id, product]));
 
-  return staticProducts.map((product) => {
+  const merged = staticProducts.map((product) => {
     const fromSanity = sanityMap.get(product.id);
     if (!fromSanity) return product;
 
@@ -33,8 +33,20 @@ function mergeProducts(
         ? fromSanity.galleryImages
         : product.galleryImages,
       featured: fromSanity.featured ?? product.featured,
+      stock: fromSanity.stock,
+      isDeleted: fromSanity.isDeleted,
+      isFromSanity: fromSanity.isFromSanity,
     };
   });
+
+  const staticIds = new Set(staticProducts.map(p => p.id));
+  sanityProducts.forEach((sp) => {
+    if (!staticIds.has(sp.id)) {
+      merged.push(sp);
+    }
+  });
+
+  return merged;
 }
 
 export function useCatalogProducts() {

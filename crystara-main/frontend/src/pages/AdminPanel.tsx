@@ -63,7 +63,8 @@ import { API_URL } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAllProducts } from "@/hooks/useProducts";
-import { Plus, Pencil, Upload } from "lucide-react";
+import { Plus, Pencil, Upload, Sparkles, RotateCcw } from "lucide-react";
+import { DEFAULT_HOMEPAGE_CATEGORIES } from "@/lib/cmsDefaults";
 
 interface AnalyticsProductItem {
   id: string;
@@ -299,6 +300,7 @@ const AdminPanel = () => {
   const [prodImageFile, setProdImageFile] = useState<File | null>(null);
   const [prodImagePreview, setProdImagePreview] = useState("");
   const [savingProduct, setSavingProduct] = useState(false);
+  const [prodStock, setProdStock] = useState("");
 
   // Order Address Editing States
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -310,6 +312,186 @@ const AdminPanel = () => {
   const [editOrderState, setEditOrderState] = useState("");
   const [editOrderPincode, setEditOrderPincode] = useState("");
   const [savingAddress, setSavingAddress] = useState(false);
+
+  // Site Settings Management States
+  const [siteSettings, setSiteSettings] = useState<{
+    heroSlides: Array<{ url: string; alt?: string }>;
+    homepageCategories: Array<{ name: string; description: string; image: string; link: string }>;
+  }>({
+    heroSlides: [],
+    homepageCategories: []
+  });
+  const [loadingSettings, setLoadingSettings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [newSlideFile, setNewSlideFile] = useState<File | null>(null);
+  const [newSlideAlt, setNewSlideAlt] = useState("");
+  const [newSlidePreview, setNewSlidePreview] = useState("");
+  const [uploadingSlide, setUploadingSlide] = useState(false);
+  const [uploadingCategoryIndex, setUploadingCategoryIndex] = useState<number | null>(null);
+
+  const fetchSupabaseSiteSettings = async () => {
+    try {
+      setLoadingSettings(true);
+      const { data, error: dbErr } = await supabase
+        .from("site_settings")
+        .select("*")
+        .eq("id", "current")
+        .maybeSingle();
+
+      if (dbErr) throw dbErr;
+      
+      if (data) {
+        setSiteSettings({
+          heroSlides: data.hero_slides || [],
+          homepageCategories: data.homepage_categories || []
+        });
+      } else {
+        setSiteSettings({
+          heroSlides: [],
+          homepageCategories: []
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching site settings:", err);
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleSaveSiteSettings = async (updatedSettings = siteSettings) => {
+    try {
+      setSavingSettings(true);
+      const { error: dbErr } = await supabase
+        .from("site_settings")
+        .upsert({
+          id: "current",
+          hero_slides: updatedSettings.heroSlides,
+          homepage_categories: updatedSettings.homepageCategories,
+          updated_at: new Date().toISOString()
+        });
+
+      if (dbErr) throw dbErr;
+      toast.success("Site settings updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["sanity-site-settings"] });
+      fetchSupabaseSiteSettings();
+    } catch (err: any) {
+      console.error("Error saving site settings:", err);
+      toast.error(err.message || "Failed to save site settings");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const handleAddSlide = async () => {
+    if (!newSlideFile) {
+      toast.error("Please choose a slide image to upload");
+      return;
+    }
+
+    try {
+      setUploadingSlide(true);
+      const fileExt = newSlideFile.name.split(".").pop();
+      const fileName = `settings/slideshow-${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, newSlideFile, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+      const updatedSlides = [...(siteSettings.heroSlides || []), { url: publicUrl, alt: newSlideAlt }];
+      const updated = { ...siteSettings, heroSlides: updatedSlides };
+      setSiteSettings(updated);
+      
+      await handleSaveSiteSettings(updated);
+
+      setNewSlideFile(null);
+      setNewSlideAlt("");
+      setNewSlidePreview("");
+    } catch (err: any) {
+      console.error("Add slide error:", err);
+      toast.error(err.message || "Failed to upload slide image");
+    } finally {
+      setUploadingSlide(false);
+    }
+  };
+
+  const handleDeleteSlide = async (indexToDelete: number) => {
+    if (!confirm("Are you sure you want to delete this slide?")) return;
+    const updatedSlides = (siteSettings.heroSlides || []).filter((_, idx) => idx !== indexToDelete);
+    const updated = { ...siteSettings, heroSlides: updatedSlides };
+    setSiteSettings(updated);
+    await handleSaveSiteSettings(updated);
+  };
+
+  const handleUpdateSlideAlt = (indexToUpdate: number, newAlt: string) => {
+    const updatedSlides = (siteSettings.heroSlides || []).map((slide, idx) => 
+      idx === indexToUpdate ? { ...slide, alt: newAlt } : slide
+    );
+    setSiteSettings({ ...siteSettings, heroSlides: updatedSlides });
+  };
+
+  const categoriesToRender = [...(siteSettings.homepageCategories || [])];
+  while (categoriesToRender.length < 4) {
+    const defaultCat = DEFAULT_HOMEPAGE_CATEGORIES[categoriesToRender.length] || {
+      name: "",
+      description: "",
+      image: "",
+      link: ""
+    };
+    categoriesToRender.push({
+      name: defaultCat.name,
+      description: defaultCat.description,
+      image: typeof defaultCat.image === "string" ? defaultCat.image : "",
+      link: defaultCat.href || defaultCat.link || ""
+    });
+  }
+
+  const handleCategoryImgUpload = async (idx: number, file: File) => {
+    try {
+      setUploadingCategoryIndex(idx);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `settings/category-${idx}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("product-images")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(fileName);
+
+      const updatedCategories = [...categoriesToRender];
+      updatedCategories[idx] = { ...updatedCategories[idx], image: publicUrl };
+      const updated = { ...siteSettings, homepageCategories: updatedCategories };
+      setSiteSettings(updated);
+      await handleSaveSiteSettings(updated);
+      toast.success(`Category ${idx + 1} image uploaded successfully!`);
+    } catch (err: any) {
+      console.error("Category upload error:", err);
+      toast.error(err.message || "Failed to upload category image");
+    } finally {
+      setUploadingCategoryIndex(null);
+    }
+  };
+
+  const handleUpdateCategoryField = (idx: number, field: string, value: string) => {
+    const updatedCategories = [...categoriesToRender];
+    updatedCategories[idx] = { ...updatedCategories[idx], [field]: value };
+    setSiteSettings({ ...siteSettings, homepageCategories: updatedCategories });
+  };
 
   useEffect(() => {
     if (!selectedOrder) {
@@ -345,6 +527,7 @@ const AdminPanel = () => {
       fetchCustomers();
       fetchAdmins();
       fetchSupabaseProducts();
+      fetchSupabaseSiteSettings();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, statusFilter, currentPage]);
@@ -514,6 +697,7 @@ const AdminPanel = () => {
     setProdOriginalPrice("");
     setProdBenefit("");
     setProdFeatured(false);
+    setProdStock("");
     setProdCategory("Bracelets");
     setProdCategorySlug("bracelets");
     setProdSubCategory("Chip Bracelet");
@@ -533,6 +717,7 @@ const AdminPanel = () => {
     setProdOriginalPrice(product.originalPrice?.toString() || "");
     setProdBenefit(product.benefit || "");
     setProdFeatured(product.featured || false);
+    setProdStock(product.stock !== undefined && product.stock !== null ? product.stock.toString() : "");
     setProdCategory(product.category || "");
     setProdCategorySlug(product.categorySlug || "");
     setProdSubCategory(product.subCategory || "");
@@ -543,25 +728,102 @@ const AdminPanel = () => {
     setIsProductModalOpen(true);
   };
 
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product? If this is a Sanity CMS override, it will revert to the original CMS catalog entry.")) {
-      return;
+  const handleDeleteProduct = async (product: any) => {
+    const isFromSanity = product.isFromSanity;
+    
+    if (isFromSanity) {
+      if (!confirm("Are you sure you want to delete and hide this product from the shop? (This will hide it from customer views.)")) {
+        return false;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from("products")
+          .upsert({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            category: product.category || "General",
+            category_slug: product.categorySlug || slugify(product.category || "General"),
+            sub_category: product.subCategory || null,
+            sub_category_slug: product.subCategorySlug || null,
+            is_deleted: true,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (error) throw error;
+        
+        toast.success("Product hidden from shop successfully");
+        fetchSupabaseProducts();
+        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        return true;
+      } catch (err: any) {
+        console.error("Hide product error:", err);
+        toast.error(err.message || "Failed to hide product from shop");
+        return false;
+      }
+    } else {
+      if (!confirm("Are you sure you want to permanently delete this custom product?")) {
+        return false;
+      }
+      
+      try {
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", product.id);
+          
+        if (error) throw error;
+        
+        toast.success("Product deleted successfully");
+        fetchSupabaseProducts();
+        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        return true;
+      } catch (err: any) {
+        console.error("Delete product error:", err);
+        toast.error(err.message || "Failed to delete product");
+        return false;
+      }
+    }
+  };
+
+  const handleRevertProduct = async (product: any) => {
+    if (!confirm("Are you sure you want to delete your custom overrides and revert this product back to its original Sanity CMS values?")) {
+      return false;
     }
     
     try {
       const { error } = await supabase
         .from("products")
         .delete()
-        .eq("id", id);
+        .eq("id", product.id);
         
       if (error) throw error;
       
-      toast.success("Product deleted successfully");
+      toast.success("Product reverted to CMS values successfully");
       fetchSupabaseProducts();
       queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+      return true;
     } catch (err: any) {
-      console.error("Delete product error:", err);
-      toast.error(err.message || "Failed to delete product");
+      console.error("Revert product error:", err);
+      toast.error(err.message || "Failed to revert product");
+      return false;
+    }
+  };
+
+  const handleDeleteProductFromModal = async () => {
+    if (!editingProduct) return;
+    const wasDeleted = await handleDeleteProduct(editingProduct);
+    if (wasDeleted) {
+      setIsProductModalOpen(false);
+    }
+  };
+
+  const handleRevertProductFromModal = async () => {
+    if (!editingProduct) return;
+    const wasReverted = await handleRevertProduct(editingProduct);
+    if (wasReverted) {
+      setIsProductModalOpen(false);
     }
   };
 
@@ -626,6 +888,7 @@ const AdminPanel = () => {
         benefit: prodBenefit || null,
         image: finalImageUrl,
         featured: prodFeatured,
+        stock: prodStock ? Number(prodStock) : null,
         category: prodCategory,
         category_slug: prodCategorySlug || slugify(prodCategory),
         sub_category: prodSubCategory || null,
@@ -1153,7 +1416,7 @@ const AdminPanel = () => {
 
         {/* Statistics Cards */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-4xl flex flex-row overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] whitespace-nowrap border border-border/40 justify-start md:grid md:grid-cols-5 h-auto min-h-[44px] gap-1 md:gap-0">
+          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-5xl flex flex-row overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] whitespace-nowrap border border-border/40 justify-start md:grid md:grid-cols-6 h-auto min-h-[44px] gap-1 md:gap-0">
             <TabsTrigger value="orders" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <ShoppingBag className="w-4 h-4" />
               Orders Management
@@ -1173,6 +1436,10 @@ const AdminPanel = () => {
             <TabsTrigger value="admin-users" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <ShieldCheck className="w-4 h-4" />
               Admin Management
+            </TabsTrigger>
+            <TabsTrigger value="site-settings" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
+              <Sparkles className="w-4 h-4" />
+              Site Settings
             </TabsTrigger>
           </TabsList>
 
@@ -1799,7 +2066,7 @@ const AdminPanel = () => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => handleDeleteProduct(product.id)}
+                                      onClick={() => handleDeleteProduct(product)}
                                       className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
@@ -2345,6 +2612,308 @@ const AdminPanel = () => {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="site-settings" className="space-y-6 pt-2">
+          {loadingSettings ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary mb-2" />
+              <p className="text-sm text-muted-foreground">Loading site settings...</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Slideshow Manager Card */}
+              <Card className="border border-border/60 shadow-md">
+                <CardHeader className="bg-secondary/10 pb-4 border-b border-border/40">
+                  <CardTitle className="font-serif text-xl sm:text-2xl flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    Home Page Slideshow (Hero Slider)
+                  </CardTitle>
+                  <CardDescription>
+                    Manage the slider images showing on the homepage. Upload high-quality banner images.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                  {/* Current Slides List */}
+                  {(!siteSettings.heroSlides || siteSettings.heroSlides.length === 0) ? (
+                    <div className="text-center py-8 border-2 border-dashed border-border rounded-xl">
+                      <p className="text-muted-foreground text-sm">No custom slides uploaded yet. The site is currently using Sanity or local default banners.</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-4"
+                        onClick={() => {
+                          if (confirm("This will load the default slideshow list structure. Proceed?")) {
+                            setSiteSettings({
+                              ...siteSettings,
+                              heroSlides: [
+                                { url: "https://images.unsplash.com/photo-1615655404745-a10c24db2ac1?q=80&w=1600&auto=format&fit=crop", alt: "Beautiful Healing Crystals Banner" }
+                              ]
+                            });
+                          }
+                        }}
+                      >
+                        Seed with a Sample Slide
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {siteSettings.heroSlides.map((slide, idx) => (
+                        <div key={idx} className="group relative bg-secondary/20 rounded-xl overflow-hidden border border-border/60 hover:shadow-lg transition-all duration-300">
+                          <div className="aspect-[16/9] w-full relative bg-black">
+                            <img src={slide.url} alt={slide.alt || "Slide"} className="w-full h-full object-cover" />
+                            <div className="absolute top-2 right-2">
+                              <Button
+                                type="button"
+                                size="icon"
+                                variant="destructive"
+                                className="w-8 h-8 rounded-full opacity-90 hover:opacity-100"
+                                onClick={() => handleDeleteSlide(idx)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="p-3 space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Alt / Description Text</label>
+                            <Input
+                              type="text"
+                              value={slide.alt || ""}
+                              placeholder="Describe this banner image..."
+                              className="text-xs bg-background"
+                              onChange={(e) => handleUpdateSlideAlt(idx, e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Add Slide Form */}
+                  <div className="border border-border/80 rounded-xl p-4 bg-secondary/5 space-y-4">
+                    <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-primary" />
+                      Add New Hero Slide Banner
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Image Picker */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground block">Banner Image File</label>
+                        <div className="flex items-center gap-3">
+                          <label className="flex-1 flex flex-col items-center justify-center border border-dashed border-border/80 rounded-lg p-3 hover:bg-secondary/20 cursor-pointer transition-colors relative min-h-[70px]">
+                            {newSlidePreview ? (
+                              <img src={newSlidePreview} alt="Preview" className="h-14 object-contain rounded" />
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 text-muted-foreground mb-1" />
+                                <span className="text-xs text-muted-foreground">Select File</span>
+                              </>
+                            )}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  setNewSlideFile(file);
+                                  setNewSlidePreview(URL.createObjectURL(file));
+                                }
+                              }}
+                            />
+                          </label>
+                          {newSlidePreview && (
+                            <Button 
+                              type="button" 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => {
+                                setNewSlideFile(null);
+                                setNewSlidePreview("");
+                              }}
+                            >
+                              Reset
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Alt Text & Button */}
+                      <div className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-semibold text-muted-foreground block">Alt Text (Accessibility & SEO)</label>
+                          <Input
+                            type="text"
+                            placeholder="e.g. Energy Crystals Collection Banner"
+                            value={newSlideAlt}
+                            onChange={(e) => setNewSlideAlt(e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          className="w-full"
+                          disabled={uploadingSlide || !newSlideFile}
+                          onClick={handleAddSlide}
+                        >
+                          {uploadingSlide ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                              Uploading banner...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-4 h-4 mr-2" />
+                              Upload & Add Banner
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Combo Pictures Manager Card */}
+              <Card className="border border-border/60 shadow-md">
+                <CardHeader className="bg-secondary/10 pb-4 border-b border-border/40">
+                  <CardTitle className="font-serif text-xl sm:text-2xl flex items-center gap-2">
+                    <Package className="w-5 h-5 text-primary" />
+                    Best Selling Combos (Homepage Categories)
+                  </CardTitle>
+                  <CardDescription>
+                    Configure the 4 large category banners showing in the "Best Selling Combos" section on the Home page.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {categoriesToRender.map((cat, idx) => (
+                      <div key={idx} className="border border-border/60 rounded-xl p-4 bg-secondary/5 space-y-4 hover:border-primary/40 transition-colors duration-300">
+                        <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                          <h3 className="font-serif font-bold text-base text-primary">Slot {idx + 1}: {cat.name || "(Unnamed)"}</h3>
+                          <span className="text-xs text-muted-foreground uppercase font-semibold">Homepage category {idx + 1}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          {/* Image preview & upload slot */}
+                          <div className="space-y-2">
+                            <label className="text-xs font-semibold text-muted-foreground block">Banner Image</label>
+                            <div className="relative aspect-square w-full bg-secondary/20 rounded-lg overflow-hidden border border-border">
+                              {cat.image ? (
+                                <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground text-center p-2">
+                                  No image
+                                </div>
+                              )}
+                              {uploadingCategoryIndex === idx && (
+                                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                  <Loader2 className="w-5 h-5 animate-spin text-white" />
+                                </div>
+                              )}
+                            </div>
+                            
+                            <label className="w-full block">
+                              <span className="inline-flex w-full items-center justify-center rounded-md border border-input bg-background px-3 py-1 text-xs font-medium shadow-sm hover:bg-accent hover:text-accent-foreground cursor-pointer h-8">
+                                <Upload className="w-3.5 h-3.5 mr-1" />
+                                Replace
+                              </span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                disabled={uploadingCategoryIndex !== null}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleCategoryImgUpload(idx, file);
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* Detail inputs */}
+                          <div className="sm:col-span-2 space-y-3">
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground block">Name</label>
+                              <Input
+                                type="text"
+                                value={cat.name}
+                                placeholder="Category Name"
+                                onChange={(e) => handleUpdateCategoryField(idx, "name", e.target.value)}
+                              />
+                            </div>
+                            
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground block">Description</label>
+                              <Input
+                                type="text"
+                                value={cat.description}
+                                placeholder="Short description..."
+                                onChange={(e) => handleUpdateCategoryField(idx, "description", e.target.value)}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground block">Link / Action URL</label>
+                              <Input
+                                type="text"
+                                value={cat.link}
+                                placeholder="e.g. /category/bracelets/chip-bracelet"
+                                onChange={(e) => handleUpdateCategoryField(idx, "link", e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-6 border-t border-border flex justify-end gap-3">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Reset layout back to default homepage categories? This will overwrite current combos state.")) {
+                          const resetCategories = DEFAULT_HOMEPAGE_CATEGORIES.map((cat: any) => ({
+                            name: cat.name,
+                            description: cat.description,
+                            image: typeof cat.image === "string" ? cat.image : "",
+                            link: cat.href || cat.link || ""
+                          }));
+                          setSiteSettings({
+                            ...siteSettings,
+                            homepageCategories: resetCategories
+                          });
+                        }
+                      }}
+                    >
+                      Reset to defaults
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      disabled={savingSettings}
+                      onClick={() => handleSaveSiteSettings()}
+                      className="px-8"
+                    >
+                      {savingSettings ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Saving changes...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          Save Site Settings
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
         {/* Order Details Modal */}
@@ -2794,8 +3363,21 @@ const AdminPanel = () => {
                     />
                   </div>
 
+                  {/* Stock Level */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Stock Level (Available Pieces)</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 10 (Leave blank for unlimited)"
+                      value={prodStock}
+                      onChange={(e) => setProdStock(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Featured */}
-                  <div className="flex items-center gap-2 pt-8">
+                  <div className="flex items-center gap-2 pt-2">
                     <input
                       type="checkbox"
                       id="prodFeatured"
@@ -2803,8 +3385,8 @@ const AdminPanel = () => {
                       onChange={(e) => setProdFeatured(e.target.checked)}
                       className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                     />
-                    <label htmlFor="prodFeatured" className="text-sm font-medium text-foreground cursor-pointer">
-                      Feature on Homepage / Showcase
+                    <label htmlFor="prodFeatured" className="text-sm font-medium text-foreground">
+                      Feature on Homepage
                     </label>
                   </div>
                 </div>
@@ -2982,25 +3564,53 @@ const AdminPanel = () => {
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex justify-end gap-3 pt-4 border-t border-border">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsProductModalOpen(false)}
-                    disabled={savingProduct}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={savingProduct} className="gap-2">
-                    {savingProduct ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Product"
+                <div className="flex justify-between items-center pt-4 border-t border-border">
+                  <div className="flex gap-2">
+                    {editingProduct && (
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDeleteProductFromModal}
+                        disabled={savingProduct}
+                        className="gap-2"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        {editingProduct.isFromSanity ? "Delete/Hide from Shop" : "Delete Product"}
+                      </Button>
                     )}
-                  </Button>
+                    {editingProduct && editingProduct.isFromSanity && editingProduct.isCustom && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleRevertProductFromModal}
+                        disabled={savingProduct}
+                        className="text-destructive hover:bg-destructive/10 border-destructive/20 hover:border-destructive/40 gap-2"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Revert to CMS Details
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsProductModalOpen(false)}
+                      disabled={savingProduct}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={savingProduct} className="gap-2">
+                      {savingProduct ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Product"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </form>
             </motion.div>

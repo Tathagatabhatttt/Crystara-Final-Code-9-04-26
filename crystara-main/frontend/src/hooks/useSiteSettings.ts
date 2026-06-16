@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sanityClient } from "@/lib/sanity";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DEFAULT_BENEFIT_CARDS,
   DEFAULT_HOMEPAGE_CATEGORIES,
@@ -82,6 +83,54 @@ const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promis
 };
 
 async function fetchSiteSettings(): Promise<SiteSettings | null> {
+  try {
+    const { data: supabaseSettings, error: dbError } = await supabase
+      .from("site_settings")
+      .select("*")
+      .eq("id", "current")
+      .maybeSingle();
+
+    if (!dbError && supabaseSettings) {
+      const heroSlides = Array.isArray(supabaseSettings.hero_slides) && supabaseSettings.hero_slides.length > 0
+        ? supabaseSettings.hero_slides.map((slide: any) => ({
+            url: slide.url || "",
+            alt: slide.alt || ""
+          })).filter((s: any) => s.url)
+        : undefined;
+
+      const homepageCategories = Array.isArray(supabaseSettings.homepage_categories) && supabaseSettings.homepage_categories.length > 0
+        ? supabaseSettings.homepage_categories.map((cat: any) => ({
+            name: cat.name || "",
+            description: cat.description || "",
+            image: cat.image || "",
+            link: cat.link || cat.href || ""
+          })).filter((c: any) => c.name && c.image)
+        : undefined;
+
+      const customizePageBackground = supabaseSettings.customize_page_background || undefined;
+
+      const benefitCards = Array.isArray(supabaseSettings.benefit_cards) && supabaseSettings.benefit_cards.length > 0
+        ? supabaseSettings.benefit_cards
+        : undefined;
+
+      const productFeatures = Array.isArray(supabaseSettings.product_features) && supabaseSettings.product_features.length > 0
+        ? supabaseSettings.product_features
+        : undefined;
+
+      if (heroSlides || homepageCategories || customizePageBackground || benefitCards || productFeatures) {
+        return {
+          heroSlides,
+          customizePageBackground,
+          homepageCategories,
+          benefitCards,
+          productFeatures
+        };
+      }
+    }
+  } catch (error) {
+    console.warn("Failed to fetch site settings from Supabase, falling back to Sanity CMS:", error);
+  }
+
   try {
     const fetchPromise = sanityClient.fetch<SiteSettings | null>(SITE_SETTINGS_QUERY);
     return await timeoutPromise(fetchPromise, 5000, null);

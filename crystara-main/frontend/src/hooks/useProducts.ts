@@ -48,6 +48,9 @@ export type FlatProduct = ProductVariant & {
     categorySlug: string;
     subCategory: string;
     subCategorySlug: string;
+    isDeleted?: boolean;
+    isFromSanity?: boolean;
+    stock?: number;
 };
 
 const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
@@ -108,6 +111,8 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 categorySlug: row.category_slug || "",
                 subCategory: row.sub_category || "",
                 subCategorySlug: row.sub_category_slug || "",
+                isDeleted: row.is_deleted || false,
+                stock: row.stock !== undefined && row.stock !== null ? Number(row.stock) : undefined,
             })) as FlatProduct[];
         })
         .catch((err) => {
@@ -123,18 +128,25 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
 
     // Merge or concatenate both catalogs
     // If they have the same ID, Supabase products take precedence so the client can override them!
-    const merged = [...sanityProducts];
+    const merged = sanityProducts.map(p => ({ ...p, isFromSanity: true }));
     supabaseProducts.forEach((sp) => {
         if (!sp.id) return;
         const idx = merged.findIndex((p) => p.id === sp.id);
         if (idx !== -1) {
-            merged[idx] = sp;
+            if (sp.isDeleted) {
+                // If it is marked as deleted/hidden, remove it from the catalog entirely
+                merged.splice(idx, 1);
+            } else {
+                merged[idx] = { ...sp, isFromSanity: true };
+            }
         } else {
-            merged.push(sp);
+            if (!sp.isDeleted) {
+                merged.push({ ...sp, isFromSanity: false });
+            }
         }
     });
 
-    return merged;
+    return merged.filter(p => !p.isDeleted);
 }
 
 export function useProductCatalog() {
