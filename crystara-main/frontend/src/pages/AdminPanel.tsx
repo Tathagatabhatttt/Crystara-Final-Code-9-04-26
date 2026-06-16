@@ -1070,13 +1070,18 @@ const AdminPanel = () => {
 
   const filteredCatalog = allMergedProducts
     ? allMergedProducts.filter((p) => {
+        const name = p.name || "";
+        const id = p.id || "";
+        const stone = p.stone || "";
+        const categorySlug = p.categorySlug || "";
+
         const matchesSearch =
-          p.name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
-          p.id.toLowerCase().includes(catalogSearch.toLowerCase()) ||
-          (p.stone && p.stone.toLowerCase().includes(catalogSearch.toLowerCase()));
+          name.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+          id.toLowerCase().includes(catalogSearch.toLowerCase()) ||
+          (stone && stone.toLowerCase().includes(catalogSearch.toLowerCase()));
         
         const matchesCategory =
-          catalogCategoryFilter === "all" || p.categorySlug === catalogCategoryFilter;
+          catalogCategoryFilter === "all" || categorySlug === catalogCategoryFilter;
         
         const isCustom = supabaseProducts.some((sp) => sp.id === p.id);
         const matchesSource =
@@ -1148,24 +1153,24 @@ const AdminPanel = () => {
 
         {/* Statistics Cards */}
         <Tabs defaultValue="orders" className="space-y-6">
-          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-4xl grid grid-cols-5 border border-border/40">
-            <TabsTrigger value="orders" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+          <TabsList className="bg-secondary/40 p-1 rounded-xl w-full max-w-4xl flex flex-row overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] whitespace-nowrap border border-border/40 justify-start md:grid md:grid-cols-5 h-auto min-h-[44px] gap-1 md:gap-0">
+            <TabsTrigger value="orders" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <ShoppingBag className="w-4 h-4" />
               Orders Management
             </TabsTrigger>
-            <TabsTrigger value="catalog" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="catalog" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <Package className="w-4 h-4" />
               Catalog Manager
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="analytics" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <BarChart3 className="w-4 h-4" />
               Site Analytics
             </TabsTrigger>
-            <TabsTrigger value="customers" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="customers" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <Users className="w-4 h-4" />
               Customers
             </TabsTrigger>
-            <TabsTrigger value="admin-users" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <TabsTrigger value="admin-users" className="rounded-lg py-2 text-sm font-medium flex items-center justify-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground shrink-0">
               <ShieldCheck className="w-4 h-4" />
               Admin Management
             </TabsTrigger>

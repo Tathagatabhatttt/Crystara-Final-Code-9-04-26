@@ -60,9 +60,31 @@ const SITE_SETTINGS_QUERY = `*[_type == "siteSettings"][0]{
   }
 }`;
 
+const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      console.warn(`Site settings query timed out after ${ms}ms. Returning fallback.`);
+      resolve(fallback);
+    }, ms);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        console.error("Promise rejected:", err);
+        resolve(fallback);
+      }
+    );
+  });
+};
+
 async function fetchSiteSettings(): Promise<SiteSettings | null> {
   try {
-    return await sanityClient.fetch<SiteSettings | null>(SITE_SETTINGS_QUERY);
+    const fetchPromise = sanityClient.fetch<SiteSettings | null>(SITE_SETTINGS_QUERY);
+    return await timeoutPromise(fetchPromise, 5000, null);
   } catch (error) {
     console.error("Failed to fetch site settings from Sanity:", error);
     return null;

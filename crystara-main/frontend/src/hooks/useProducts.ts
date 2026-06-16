@@ -50,52 +50,82 @@ export type FlatProduct = ProductVariant & {
     subCategorySlug: string;
 };
 
+const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+    return new Promise((resolve) => {
+        const timer = setTimeout(() => {
+            console.warn(`Sanity query timed out after ${ms}ms. Returning fallback.`);
+            resolve(fallback);
+        }, ms);
+
+        promise.then(
+            (value) => {
+                clearTimeout(timer);
+                resolve(value);
+            },
+            (err) => {
+                clearTimeout(timer);
+                console.error("Promise rejected:", err);
+                resolve(fallback);
+            }
+        );
+    });
+};
+
 async function fetchProductCatalog(): Promise<ProductCategory[]> {
-    const data = await sanityClient.fetch<ProductCategory[]>(CATEGORIES_QUERY);
-    return data;
+    try {
+        const fetchPromise = sanityClient.fetch<ProductCategory[]>(CATEGORIES_QUERY);
+        return await timeoutPromise(fetchPromise, 5000, [] as ProductCategory[]);
+    } catch (err) {
+        console.error("Error fetching product catalog:", err);
+        return [];
+    }
 }
 
 async function fetchAllProducts(): Promise<FlatProduct[]> {
-    let sanityProducts: FlatProduct[] = [];
-    try {
-        sanityProducts = await sanityClient.fetch<FlatProduct[]>(ALL_PRODUCTS_QUERY);
-    } catch (err) {
-        console.error("Sanity fetch failed:", err);
-    }
+    const sanityPromise = sanityClient.fetch<FlatProduct[]>(ALL_PRODUCTS_QUERY)
+        .catch((err) => {
+            console.error("Sanity fetch failed:", err);
+            return [] as FlatProduct[];
+        });
 
-    let supabaseProducts: FlatProduct[] = [];
-    try {
-        const { data, error } = await supabase
-            .from("products")
-            .select("*");
-        
-        if (error) throw error;
-        
-        if (data) {
-            supabaseProducts = data.map((row: any) => ({
+    const supabasePromise = supabase
+        .from("products")
+        .select("*")
+        .then(({ data, error }) => {
+            if (error) throw error;
+            if (!data) return [] as FlatProduct[];
+            return data.map((row: any) => ({
                 id: row.id,
-                name: row.name,
+                name: row.name || "",
                 stone: row.stone || "",
-                price: Number(row.price),
+                price: Number(row.price || 0),
                 originalPrice: row.original_price ? Number(row.original_price) : undefined,
                 benefit: row.benefit || "",
                 image: row.image || "",
                 galleryImages: Array.isArray(row.gallery_images) ? row.gallery_images : [],
                 featured: row.featured || false,
-                category: row.category,
-                categorySlug: row.category_slug,
+                category: row.category || "",
+                categorySlug: row.category_slug || "",
                 subCategory: row.sub_category || "",
                 subCategorySlug: row.sub_category_slug || "",
-            }));
-        }
-    } catch (err) {
-        console.error("Supabase products fetch failed:", err);
-    }
+            })) as FlatProduct[];
+        })
+        .catch((err) => {
+            console.error("Supabase products fetch failed:", err);
+            return [] as FlatProduct[];
+        });
+
+    // Run fetches in parallel, with a 5-second timeout on the Sanity query
+    const [sanityProducts, supabaseProducts] = await Promise.all([
+        timeoutPromise(sanityPromise, 5000, [] as FlatProduct[]),
+        supabasePromise
+    ]);
 
     // Merge or concatenate both catalogs
     // If they have the same ID, Supabase products take precedence so the client can override them!
     const merged = [...sanityProducts];
     supabaseProducts.forEach((sp) => {
+        if (!sp.id) return;
         const idx = merged.findIndex((p) => p.id === sp.id);
         if (idx !== -1) {
             merged[idx] = sp;
