@@ -284,21 +284,8 @@ async function verifyAdmin(req, res, next) {
 }
 
 async function verifyCustomer(req, res, next) {
-  try {
-    const { data: profile } = await supabase
-      .from("user_profiles")
-      .select("role")
-      .eq("user_id", req.user.id)
-      .single();
-
-    if (profile?.role === "admin") {
-      return res.status(403).json({ error: "Customer access required" });
-    }
-
-    next();
-  } catch (error) {
-    return res.status(403).json({ error: "Customer access required" });
-  }
+  // Allow all authenticated users (both customers and admins) to access cart APIs
+  next();
 }
 
 // Create an order record after successful payment
