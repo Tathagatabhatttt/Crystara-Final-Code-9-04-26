@@ -391,7 +391,7 @@ const AdminPanel = () => {
     try {
       setUploadingSlide(true);
       const fileExt = newSlideFile.name.split(".").pop();
-      const fileName = `settings/slideshow-${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const fileName = `products/slideshow-${Date.now()}-${Math.floor(Math.random() * 1000)}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from("product-images")
@@ -458,7 +458,7 @@ const AdminPanel = () => {
     try {
       setUploadingCategoryIndex(idx);
       const fileExt = file.name.split(".").pop();
-      const fileName = `settings/category-${idx}-${Date.now()}.${fileExt}`;
+      const fileName = `products/category-${idx}-${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from("product-images")
@@ -2850,6 +2850,16 @@ const AdminPanel = () => {
                                 value={cat.description}
                                 placeholder="Short description..."
                                 onChange={(e) => handleUpdateCategoryField(idx, "description", e.target.value)}
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground block">Image URL</label>
+                              <Input
+                                type="text"
+                                value={cat.image}
+                                placeholder="https://example.com/image.jpg"
+                                onChange={(e) => handleUpdateCategoryField(idx, "image", e.target.value)}
                               />
                             </div>
 
