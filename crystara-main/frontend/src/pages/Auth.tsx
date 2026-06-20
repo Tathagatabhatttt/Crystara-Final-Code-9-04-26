@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, Sparkles, KeyRound, CheckCircle2, AlertCircle, Loader2, Gift, Copy } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sparkles, KeyRound, CheckCircle2, AlertCircle, Loader2, Gift, Copy, Phone } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import OnboardingForm from "@/components/OnboardingForm";
@@ -27,6 +27,8 @@ const Auth = () => {
   const redirectUrl = searchParams.get("redirect") || "/profile";
   const [isLogin, setIsLogin] = useState(searchParams.get("mode") !== "signup");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [authType, setAuthType] = useState<"email" | "phone">("email");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -49,6 +51,17 @@ const Auth = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
+  const formatPhoneNumber = (val: string) => {
+    const cleaned = val.replace(/\D/g, "");
+    if (val.startsWith("+")) {
+      return val;
+    }
+    if (cleaned.length === 10) {
+      return `+91${cleaned}`;
+    }
+    return cleaned ? `+${cleaned}` : "";
+  };
+
   const { user, loading: authLoading, isOnboarded, signIn, signUp, checkOnboardingStatus } = useAuth();
   const navigate = useNavigate();
 
@@ -69,8 +82,17 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      const isPhone = authType === "phone";
+      const identifier = isPhone ? formatPhoneNumber(phone) : email;
+
+      if (isPhone && (!identifier || identifier.length < 10)) {
+        toast.error("Please enter a valid phone number");
+        setLoading(false);
+        return;
+      }
+
       if (isLogin) {
-        const { error, session } = await signIn(email, password);
+        const { error, session } = await signIn(identifier, password, isPhone);
 
         if (error) {
           toast.error(error instanceof Error ? error.message : String(error));
@@ -94,7 +116,7 @@ const Auth = () => {
           return;
         }
 
-        const { error, session } = await signUp(email, password);
+        const { error, session } = await signUp(identifier, password, isPhone);
 
         if (error) {
           toast.error(error instanceof Error ? error.message : String(error));
@@ -110,7 +132,9 @@ const Auth = () => {
             }
           } else {
             toast.success(
-              "Account created. Verify email, then sign in to use your 10% off."
+              isPhone
+                ? "Account created! You can now sign in with your phone number."
+                : "Account created. Verify email, then sign in to use your 10% off."
             );
             setIsLogin(true);
             setPassword("");
@@ -206,20 +230,35 @@ const Auth = () => {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      toast.error("Please enter your email address");
-      return;
-    }
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-        },
-      });
-      if (error) throw error;
-      toast.success("Verification code sent to your email!");
+      if (authType === "email") {
+        if (!email) {
+          toast.error("Please enter your email address");
+          setLoading(false);
+          return;
+        }
+        const { error } = await supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        toast.success("Verification code sent to your email!");
+      } else {
+        if (!phone) {
+          toast.error("Please enter your phone number");
+          setLoading(false);
+          return;
+        }
+        const formattedPhone = formatPhoneNumber(phone);
+        const { error } = await supabase.auth.signInWithOtp({
+          phone: formattedPhone,
+        });
+        if (error) throw error;
+        toast.success("Verification code sent to your phone via SMS!");
+      }
       setOtpSent(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to send verification code");
@@ -236,11 +275,18 @@ const Auth = () => {
     }
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email,
+      const verifyParams: any = {
         token: otpCode,
-        type: "email",
-      });
+      };
+      if (authType === "email") {
+        verifyParams.email = email;
+        verifyParams.type = "email";
+      } else {
+        verifyParams.phone = formatPhoneNumber(phone);
+        verifyParams.type = "sms";
+      }
+
+      const { data, error } = await supabase.auth.verifyOtp(verifyParams);
       if (error) throw error;
       if (data.session) {
         toast.success("Welcome!");
@@ -391,162 +437,229 @@ const Auth = () => {
                     </button>
                   </form>
                 )
-              ) : isLogin && loginMethod === "otp" ? (
-                otpSent ? (
-                  <form onSubmit={handleVerifyOtp} className="space-y-4">
-                    <div className="text-center text-sm text-muted-foreground mb-2">
-                      We sent a verification code to <span className="font-semibold text-foreground">{email}</span>.
-                    </div>
-                    <div className="relative">
-                      <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="text"
-                        placeholder="Enter verification code"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                        className="pl-10 tracking-widest text-center font-semibold text-lg"
-                        maxLength={8}
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Verifying..." : "Verify & Sign In"}
-                    </Button>
-                    <div className="flex justify-between items-center text-xs">
-                      <button
-                        type="button"
-                        onClick={handleSendOtp}
-                        className="text-primary hover:underline"
-                        disabled={loading}
-                      >
-                        Resend Code
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOtpSent(false);
-                          setOtpCode("");
-                        }}
-                        className="text-muted-foreground hover:underline"
-                      >
-                        Change Email
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <form onSubmit={handleSendOtp} className="space-y-4">
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Sending Code..." : "Send Login Code (OTP)"}
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => setLoginMethod("password")}
-                      className="text-xs text-primary w-full text-center hover:underline block"
-                    >
-                      Sign in with password instead
-                    </button>
-                  </form>
-                )
               ) : (
                 <>
-                  <form
-                    onSubmit={handleSubmit}
-                    className="space-y-4"
-                  >
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) =>
-                          setEmail(e.target.value)
-                        }
-                        className="pl-10"
-                        required
-                      />
-                    </div>
+                  {/* Auth Method Selector */}
+                  <div className="flex border-b border-border mb-6">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthType("email");
+                        setOtpSent(false);
+                      }}
+                      className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors duration-300 ${
+                        authType === "email"
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthType("phone");
+                        setOtpSent(false);
+                      }}
+                      className={`flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors duration-300 ${
+                        authType === "phone"
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      Phone Number
+                    </button>
+                  </div>
 
-                    <div className="space-y-1">
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          type={
-                            showPassword ? "text" : "password"
-                          }
-                          placeholder="Password"
-                          value={password}
-                          onChange={(e) =>
-                            setPassword(e.target.value)
-                          }
-                          className="pl-10 pr-10"
-                          required
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowPassword(!showPassword)
-                          }
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
-                        </button>
-                      </div>
-
-                      {isLogin && (
-                        <div className="flex justify-end">
+                  {isLogin && loginMethod === "otp" ? (
+                    otpSent ? (
+                      <form onSubmit={handleVerifyOtp} className="space-y-4">
+                        <div className="text-center text-sm text-muted-foreground mb-2">
+                          We sent a verification code to{" "}
+                          <span className="font-semibold text-foreground">
+                            {authType === "email" ? email : phone}
+                          </span>.
+                        </div>
+                        <div className="relative">
+                          <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="text"
+                            placeholder="Enter verification code"
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value)}
+                            className="pl-10 tracking-widest text-center font-semibold text-lg"
+                            maxLength={8}
+                            required
+                          />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Verifying..." : "Verify & Sign In"}
+                        </Button>
+                        <div className="flex justify-between items-center text-xs">
+                          <button
+                            type="button"
+                            onClick={handleSendOtp}
+                            className="text-primary hover:underline"
+                            disabled={loading}
+                          >
+                            Resend Code
+                          </button>
                           <button
                             type="button"
                             onClick={() => {
-                              setForgotEmail(email);
-                              setShowForgot(true);
+                              setOtpSent(false);
+                              setOtpCode("");
                             }}
-                            className="text-xs text-primary hover:underline"
+                            className="text-muted-foreground hover:underline"
                           >
-                            Forgot Password?
+                            Change {authType === "email" ? "Email" : "Phone"}
                           </button>
                         </div>
-                      )}
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={loading}
+                      </form>
+                    ) : (
+                      <form onSubmit={handleSendOtp} className="space-y-4">
+                        {authType === "email" ? (
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              type="email"
+                              placeholder="Email"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <Input
+                              type="tel"
+                              placeholder="Phone Number (e.g. 9876543210)"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        )}
+                        <Button type="submit" className="w-full" disabled={loading}>
+                          {loading ? "Sending Code..." : "Send Login Code (OTP)"}
+                        </Button>
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod("password")}
+                          className="text-xs text-primary w-full text-center hover:underline block"
+                        >
+                          Sign in with password instead
+                        </button>
+                      </form>
+                    )
+                  ) : (
+                    <form
+                      onSubmit={handleSubmit}
+                      className="space-y-4"
                     >
-                      {loading
-                        ? "Please wait..."
-                        : isLogin
-                        ? "Sign In"
-                        : "Sign Up"}
-                    </Button>
+                      {authType === "email" ? (
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) =>
+                              setEmail(e.target.value)
+                            }
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type="tel"
+                            placeholder="Phone Number (e.g. 9876543210)"
+                            value={phone}
+                            onChange={(e) =>
+                              setPhone(e.target.value)
+                            }
+                            className="pl-10"
+                            required
+                          />
+                        </div>
+                      )}
 
-                    {isLogin && (
-                      <button
-                        type="button"
-                        onClick={() => setLoginMethod("otp")}
-                        className="text-xs text-primary w-full text-center hover:underline block"
+                      <div className="space-y-1">
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                          <Input
+                            type={
+                              showPassword ? "text" : "password"
+                            }
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) =>
+                              setPassword(e.target.value)
+                            }
+                            className="pl-10 pr-10"
+                            required
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setShowPassword(!showPassword)
+                            }
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+
+                        {isLogin && (
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setForgotEmail(authType === "email" ? email : "");
+                                setShowForgot(true);
+                              }}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              Forgot Password?
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={loading}
                       >
-                        Sign in with email verification code (OTP)
-                      </button>
-                    )}
-                  </form>
+                        {loading
+                          ? "Please wait..."
+                          : isLogin
+                          ? "Sign In"
+                          : "Sign Up"}
+                      </Button>
+
+                      {isLogin && (
+                        <button
+                          type="button"
+                          onClick={() => setLoginMethod("otp")}
+                          className="text-xs text-primary w-full text-center hover:underline block"
+                        >
+                          Sign in with verification code (OTP)
+                        </button>
+                      )}
+                    </form>
+                  )}
                 </>
               )}
 

@@ -32,13 +32,14 @@ const CategorySection = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: index * 0.05 }}
             >
-              <Link to={category.href} className="group block relative overflow-hidden rounded-xl aspect-square shadow-crystal">
-                <img src={category.image} alt={category.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3">
-                  <h3 className="text-sm font-serif font-semibold text-white mb-0.5">{category.name}</h3>
-                  <p className="text-[10px] text-white/70">{category.description}</p>
+              <Link to={category.href} className="group block relative overflow-hidden rounded-xl aspect-square shadow-crystal border border-white/10">
+                <img src={category.image} alt={category.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10">
+                  <h3 className="text-base font-serif font-bold text-white mb-0.5 tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{category.name}</h3>
+                  <p className="text-xs font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{category.description}</p>
                 </div>
+                <div className="absolute inset-0 border-2 border-white/15 rounded-xl pointer-events-none transition-all duration-300 group-hover:border-primary/80" />
               </Link>
             </motion.div>
           ))}
@@ -53,14 +54,14 @@ const CategorySection = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
             >
-              <Link to={category.href} className="group block relative overflow-hidden rounded-xl aspect-square shadow-crystal">
-                <img src={category.image} alt={category.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-3 md:p-5">
-                  <h3 className="text-base md:text-xl font-serif font-semibold text-white mb-0.5">{category.name}</h3>
-                  <p className="text-sm text-white/70">{category.description}</p>
+              <Link to={category.href} className="group block relative overflow-hidden rounded-xl aspect-square shadow-crystal border border-white/10">
+                <img src={category.image} alt={category.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 z-10">
+                  <h3 className="text-lg md:text-2xl font-serif font-bold text-white mb-1 tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{category.name}</h3>
+                  <p className="text-sm md:text-base font-semibold text-white/90 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{category.description}</p>
                 </div>
-                <div className="absolute inset-0 border-2 border-primary/0 rounded-xl transition-all duration-300 group-hover:border-primary/50" />
+                <div className="absolute inset-0 border-2 border-white/15 rounded-xl pointer-events-none transition-all duration-300 group-hover:border-primary/80" />
               </Link>
             </motion.div>
           ))}

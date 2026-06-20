@@ -195,18 +195,26 @@ app.post("/verify-payment", verifyAuth, (req, res) => {
 // Public endpoint to bypass email rate limits by registering and auto-confirming users
 app.post("/auth/signup", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, phone, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
+    if ((!email && !phone) || !password) {
+      return res.status(400).json({ error: "Email or phone number, and password are required" });
+    }
+
+    const createUserOptions = {
+      password,
+    };
+
+    if (email) {
+      createUserOptions.email = email;
+      createUserOptions.email_confirm = true;
+    } else if (phone) {
+      createUserOptions.phone = phone;
+      createUserOptions.phone_confirm = true;
     }
 
     // Call Supabase Admin API to create and auto-confirm the user
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-    });
+    const { data, error } = await supabase.auth.admin.createUser(createUserOptions);
 
     if (error) {
       return res.status(400).json({ error: error.message });
@@ -220,7 +228,8 @@ app.post("/auth/signup", async (req, res) => {
       .upsert(
         {
           user_id: user.id,
-          email: user.email,
+          email: user.email || null,
+          phone: user.phone || null,
           role: "user",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),

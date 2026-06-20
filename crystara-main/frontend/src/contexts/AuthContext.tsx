@@ -18,14 +18,15 @@ interface AuthContextType {
   profile: any | null;
   setIsOnboarded: (val: boolean) => void;
   checkOnboardingStatus: (accessToken?: string) => Promise<boolean>;
-  fetchProfile: () => Promise<void>;
   signIn: (
-    email: string,
+    identifier: string,
     password: string,
+    isPhone?: boolean,
   ) => Promise<{ error: unknown; session: Session | null }>;
   signUp: (
-    email: string,
+    identifier: string,
     password: string,
+    isPhone?: boolean,
   ) => Promise<{ error: unknown; session: Session | null }>;
   signOut: () => Promise<void>;
 }
@@ -150,11 +151,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.access_token]);
 
-  const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+  const signIn = async (identifier: string, password: string, isPhone = false) => {
+    const credentials = isPhone ? { phone: identifier, password } : { email: identifier, password };
+    const { data, error } = await supabase.auth.signInWithPassword(credentials);
     if (data?.session) {
       setSession(data.session);
       setUser(data.session.user);
@@ -162,15 +161,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error, session: data?.session ?? null };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (identifier: string, password: string, isPhone = false) => {
     try {
+      const payload = isPhone ? { phone: identifier, password } : { email: identifier, password };
       // Create user auto-confirmed using backend custom route (bypasses rate limit)
       const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -179,10 +179,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // Automatically sign in the user
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const credentials = isPhone ? { phone: identifier, password } : { email: identifier, password };
+      const { data, error } = await supabase.auth.signInWithPassword(credentials);
 
       if (error) throw error;
 
