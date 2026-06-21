@@ -14,6 +14,8 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
 ];
 
 export function resolveHeroSlides(cmsSlides?: HeroSlide[] | null): HeroSlide[] {
-  const validSlides = (cmsSlides ?? []).filter((slide) => Boolean(slide?.url));
-  return validSlides.length > 0 ? validSlides : DEFAULT_HERO_SLIDES;
+  if (cmsSlides && cmsSlides.length > 0) {
+    return cmsSlides.filter((slide) => Boolean(slide?.url) && slide.active !== false);
+  }
+  return DEFAULT_HERO_SLIDES.filter((slide) => slide.active !== false);
 }

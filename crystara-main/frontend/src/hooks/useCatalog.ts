@@ -36,6 +36,7 @@ function mergeProducts(
       stock: fromSanity.stock,
       isDeleted: fromSanity.isDeleted,
       isFromSanity: fromSanity.isFromSanity,
+      videoUrl: fromSanity.videoUrl || product.videoUrl,
     };
   });
 

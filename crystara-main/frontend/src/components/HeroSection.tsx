@@ -41,6 +41,33 @@ const HeroSection = () => {
 
   const activeSlide = slides[currentSlide];
 
+  if (!activeSlide) {
+    return (
+      <section className="relative w-full h-[100svh] min-h-[100svh] overflow-hidden bg-black flex items-center justify-center">
+        <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-12 px-6 text-center">
+          <div className="pt-[7.5rem] md:pt-[9.5rem] max-w-5xl mx-auto px-5">
+            <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:text-xs">
+              Handpicked · Natural · Energized
+            </p>
+            <h1 className="text-3xl font-serif font-bold text-white min-[390px]:text-4xl sm:text-5xl md:text-6xl drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)]">
+              Welcome to <span className="text-gradient-mystic">Crystara</span>
+            </h1>
+          </div>
+          <div className="mx-auto w-full max-w-[34rem] pointer-events-auto px-5 pb-[4.75rem] sm:pb-[5.25rem]">
+            <Link to="/customize-your-own" className="block">
+              <CrystalButton className="w-full px-8 py-4 text-xs font-semibold uppercase tracking-widest text-white sm:text-base">
+                <span className="relative z-10 flex items-center justify-center gap-2.5">
+                  <Sparkles className="h-4 w-4 flex-shrink-0 text-white sm:h-5 sm:w-5" />
+                  Customize Your Own
+                </span>
+              </CrystalButton>
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative w-full h-[100svh] min-h-[100svh] overflow-hidden bg-black">
       <div className="absolute inset-0 w-full h-full">

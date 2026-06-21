@@ -201,7 +201,7 @@ const ProductDetail = () => {
           <div className="grid lg:grid-cols-2 gap-6 md:gap-12">
             {/* Product Image Gallery */}
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
-              <ProductImageGallery images={galleryImages} productName={product.name} />
+              <ProductImageGallery images={galleryImages} productName={product.name} videoUrl={product.videoUrl} />
             </motion.div>
 
             {/* Product Info - Reordered */}

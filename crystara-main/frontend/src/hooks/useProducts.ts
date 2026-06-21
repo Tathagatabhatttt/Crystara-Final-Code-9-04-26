@@ -51,6 +51,7 @@ export type FlatProduct = ProductVariant & {
     isDeleted?: boolean;
     isFromSanity?: boolean;
     stock?: number;
+    videoUrl?: string;
 };
 
 const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
@@ -113,6 +114,7 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 subCategorySlug: row.sub_category_slug || "",
                 isDeleted: row.is_deleted || false,
                 stock: row.stock !== undefined && row.stock !== null ? Number(row.stock) : undefined,
+                videoUrl: row.video_url || "",
             })) as FlatProduct[];
         })
         .catch((err) => {

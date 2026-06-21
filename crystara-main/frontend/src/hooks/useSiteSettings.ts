@@ -94,7 +94,8 @@ async function fetchSiteSettings(): Promise<SiteSettings | null> {
       const heroSlides = Array.isArray(supabaseSettings.hero_slides) && supabaseSettings.hero_slides.length > 0
         ? supabaseSettings.hero_slides.map((slide: any) => ({
             url: slide.url || "",
-            alt: slide.alt || ""
+            alt: slide.alt || "",
+            active: slide.active !== false
           })).filter((s: any) => s.url)
         : undefined;
 

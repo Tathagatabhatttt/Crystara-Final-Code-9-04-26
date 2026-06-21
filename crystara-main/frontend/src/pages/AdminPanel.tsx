@@ -65,6 +65,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAllProducts } from "@/hooks/useProducts";
 import { Plus, Pencil, Upload, Sparkles, RotateCcw } from "lucide-react";
 import { DEFAULT_HOMEPAGE_CATEGORIES } from "@/lib/cmsDefaults";
+import { DEFAULT_HERO_SLIDES } from "@/lib/sanityImage";
 
 interface AnalyticsProductItem {
   id: string;
@@ -301,6 +302,12 @@ const AdminPanel = () => {
   const [prodImagePreview, setProdImagePreview] = useState("");
   const [savingProduct, setSavingProduct] = useState(false);
   const [prodStock, setProdStock] = useState("");
+  const [prodGalleryFiles, setProdGalleryFiles] = useState<File[]>([]);
+  const [prodGalleryPreviews, setProdGalleryPreviews] = useState<string[]>([]);
+  const [prodGalleryUrls, setProdGalleryUrls] = useState<string[]>([]);
+  const [prodVideoFile, setProdVideoFile] = useState<File | null>(null);
+  const [prodVideoPreview, setProdVideoPreview] = useState("");
+  const [prodVideoUrl, setProdVideoUrl] = useState("");
 
   // Order Address Editing States
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -406,7 +413,11 @@ const AdminPanel = () => {
         .from("product-images")
         .getPublicUrl(fileName);
 
-      const updatedSlides = [...(siteSettings.heroSlides || []), { url: publicUrl, alt: newSlideAlt }];
+      const currentSlides = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+        ? siteSettings.heroSlides
+        : DEFAULT_HERO_SLIDES.map(slide => ({ ...slide, active: true }));
+
+      const updatedSlides = [...currentSlides, { url: publicUrl, alt: newSlideAlt, active: true }];
       const updated = { ...siteSettings, heroSlides: updatedSlides };
       setSiteSettings(updated);
       
@@ -424,16 +435,32 @@ const AdminPanel = () => {
   };
 
   const handleDeleteSlide = async (indexToDelete: number) => {
-    if (!confirm("Are you sure you want to delete this slide?")) return;
-    const updatedSlides = (siteSettings.heroSlides || []).filter((_, idx) => idx !== indexToDelete);
+    if (!confirm("Are you sure you want to delete this slide permanently?")) return;
+    const currentSlides = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+      ? siteSettings.heroSlides
+      : DEFAULT_HERO_SLIDES.map(slide => ({ ...slide, active: true }));
+    const updatedSlides = currentSlides.filter((_, idx) => idx !== indexToDelete);
     const updated = { ...siteSettings, heroSlides: updatedSlides };
     setSiteSettings(updated);
     await handleSaveSiteSettings(updated);
   };
 
   const handleUpdateSlideAlt = (indexToUpdate: number, newAlt: string) => {
-    const updatedSlides = (siteSettings.heroSlides || []).map((slide, idx) => 
+    const currentSlides = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+      ? siteSettings.heroSlides
+      : DEFAULT_HERO_SLIDES.map(slide => ({ ...slide, active: true }));
+    const updatedSlides = currentSlides.map((slide, idx) => 
       idx === indexToUpdate ? { ...slide, alt: newAlt } : slide
+    );
+    setSiteSettings({ ...siteSettings, heroSlides: updatedSlides });
+  };
+
+  const handleToggleSlideActive = (indexToUpdate: number, active: boolean) => {
+    const currentSlides = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+      ? siteSettings.heroSlides
+      : DEFAULT_HERO_SLIDES.map(slide => ({ ...slide, active: true }));
+    const updatedSlides = currentSlides.map((slide, idx) => 
+      idx === indexToUpdate ? { ...slide, active } : slide
     );
     setSiteSettings({ ...siteSettings, heroSlides: updatedSlides });
   };
@@ -705,6 +732,12 @@ const AdminPanel = () => {
     setProdImage("");
     setProdImageFile(null);
     setProdImagePreview("");
+    setProdGalleryFiles([]);
+    setProdGalleryPreviews([]);
+    setProdGalleryUrls([]);
+    setProdVideoFile(null);
+    setProdVideoPreview("");
+    setProdVideoUrl("");
     setIsProductModalOpen(true);
   };
 
@@ -725,6 +758,12 @@ const AdminPanel = () => {
     setProdImage(product.image || "");
     setProdImageFile(null);
     setProdImagePreview("");
+    setProdGalleryFiles([]);
+    setProdGalleryPreviews([]);
+    setProdGalleryUrls(Array.isArray(product.galleryImages) ? product.galleryImages : []);
+    setProdVideoFile(null);
+    setProdVideoPreview("");
+    setProdVideoUrl(product.videoUrl || "");
     setIsProductModalOpen(true);
   };
 
@@ -747,8 +786,7 @@ const AdminPanel = () => {
             category_slug: product.categorySlug || slugify(product.category || "General"),
             sub_category: product.subCategory || null,
             sub_category_slug: product.subCategorySlug || null,
-            is_deleted: true,
-            updated_at: new Date().toISOString()
+            is_deleted: true
           });
           
         if (error) throw error;
@@ -879,6 +917,57 @@ const AdminPanel = () => {
         return;
       }
 
+      // Handle gallery images uploads
+      const uploadedGalleryUrls: string[] = [];
+      for (let i = 0; i < prodGalleryFiles.length; i++) {
+        const file = prodGalleryFiles[i];
+        const fileExt = file.name.split(".").pop();
+        const fileName = `products/${prodId}-gallery-${i}-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(fileName, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw new Error(`Gallery image ${i+1} upload failed: ${uploadError.message}`);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(fileName);
+
+        uploadedGalleryUrls.push(publicUrl);
+      }
+
+      const finalGalleryImages = [...prodGalleryUrls, ...uploadedGalleryUrls];
+
+      // Handle video file upload if selected
+      let finalVideoUrl = prodVideoUrl;
+      if (prodVideoFile) {
+        const fileExt = prodVideoFile.name.split(".").pop();
+        const fileName = `products/${prodId}-video-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from("product-images")
+          .upload(fileName, prodVideoFile, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          throw new Error(`Video upload failed: ${uploadError.message}`);
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("product-images")
+          .getPublicUrl(fileName);
+
+        finalVideoUrl = publicUrl;
+      }
+
       const productRecord = {
         id: prodId,
         name: prodName,
@@ -893,6 +982,8 @@ const AdminPanel = () => {
         category_slug: prodCategorySlug || slugify(prodCategory),
         sub_category: prodSubCategory || null,
         sub_category_slug: prodSubCategorySlug || (prodSubCategory ? slugify(prodSubCategory) : null),
+        gallery_images: finalGalleryImages,
+        video_url: finalVideoUrl || null,
       };
 
       const { error: dbError } = await supabase
@@ -2634,59 +2725,107 @@ const AdminPanel = () => {
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
                   {/* Current Slides List */}
-                  {(!siteSettings.heroSlides || siteSettings.heroSlides.length === 0) ? (
-                    <div className="text-center py-8 border-2 border-dashed border-border rounded-xl">
-                      <p className="text-muted-foreground text-sm">No custom slides uploaded yet. The site is currently using Sanity or local default banners.</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-4"
-                        onClick={() => {
-                          if (confirm("This will load the default slideshow list structure. Proceed?")) {
-                            setSiteSettings({
-                              ...siteSettings,
-                              heroSlides: [
-                                { url: "https://images.unsplash.com/photo-1615655404745-a10c24db2ac1?q=80&w=1600&auto=format&fit=crop", alt: "Beautiful Healing Crystals Banner" }
-                              ]
-                            });
-                          }
-                        }}
-                      >
-                        Seed with a Sample Slide
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {siteSettings.heroSlides.map((slide, idx) => (
-                        <div key={idx} className="group relative bg-secondary/20 rounded-xl overflow-hidden border border-border/60 hover:shadow-lg transition-all duration-300">
-                          <div className="aspect-[16/9] w-full relative bg-black">
-                            <img src={slide.url} alt={slide.alt || "Slide"} className="w-full h-full object-cover" />
-                            <div className="absolute top-2 right-2">
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="destructive"
-                                className="w-8 h-8 rounded-full opacity-90 hover:opacity-100"
-                                onClick={() => handleDeleteSlide(idx)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
+                  {(() => {
+                    const slidesToRender = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+                      ? siteSettings.heroSlides
+                      : DEFAULT_HERO_SLIDES;
+
+                    return slidesToRender.length === 0 ? (
+                      <div className="text-center py-8 border-2 border-dashed border-border rounded-xl">
+                        <p className="text-muted-foreground text-sm">No slides available. Please upload a banner below.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {slidesToRender.map((slide, idx) => {
+                          const isKept = slide.active !== false;
+                          return (
+                            <div key={idx} className={`group relative bg-secondary/20 rounded-xl overflow-hidden border border-border/60 hover:shadow-lg transition-all duration-300 ${!isKept ? 'opacity-80 border-dashed border-muted-foreground/30' : ''}`}>
+                              <div className="aspect-[16/9] w-full relative bg-black overflow-hidden">
+                                <img 
+                                  src={slide.url} 
+                                  alt={slide.alt || "Slide"} 
+                                  className={`w-full h-full object-cover transition-all duration-300 ${!isKept ? 'opacity-40 grayscale blur-[1px]' : ''}`} 
+                                />
+                                
+                                {/* Status overlay if Hidden */}
+                                {!isKept && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                    <Badge variant="destructive" className="px-3 py-1 font-sans font-semibold tracking-wider text-xs uppercase bg-rose-600/90 text-white shadow-lg">
+                                      Deleted / Hidden
+                                    </Badge>
+                                  </div>
+                                )}
+
+                                {/* Delete permanently (Trash button) */}
+                                <div className="absolute top-2 right-2 flex gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="destructive"
+                                    title="Delete Permanently"
+                                    className="w-8 h-8 rounded-full shadow-md bg-red-600 hover:bg-red-700 text-white"
+                                    onClick={() => handleDeleteSlide(idx)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="p-4 space-y-4">
+                                {/* Keep vs Delete/Hide toggle option */}
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                                    Status Option
+                                  </label>
+                                  <div className="flex gap-2 w-full p-1 bg-secondary/30 rounded-lg border border-border/50">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={isKept ? "default" : "ghost"}
+                                      className={`flex-1 text-xs py-1 h-7 font-medium transition-all ${
+                                        isKept 
+                                          ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm" 
+                                          : "text-muted-foreground hover:text-foreground"
+                                      }`}
+                                      onClick={() => handleToggleSlideActive(idx, true)}
+                                    >
+                                      <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                                      Keep
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant={!isKept ? "default" : "ghost"}
+                                      className={`flex-1 text-xs py-1 h-7 font-medium transition-all ${
+                                        !isKept 
+                                          ? "bg-rose-600/95 hover:bg-rose-700 text-white shadow-sm" 
+                                          : "text-muted-foreground hover:text-destructive"
+                                      }`}
+                                      onClick={() => handleToggleSlideActive(idx, false)}
+                                    >
+                                      <XCircle className="w-3.5 h-3.5 mr-1" />
+                                      Delete (Hide)
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Alt / Description Text</label>
+                                  <Input
+                                    type="text"
+                                    value={slide.alt || ""}
+                                    placeholder="Describe this banner image..."
+                                    className="text-xs bg-background"
+                                    onChange={(e) => handleUpdateSlideAlt(idx, e.target.value)}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                          <div className="p-3 space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Alt / Description Text</label>
-                            <Input
-                              type="text"
-                              value={slide.alt || ""}
-                              placeholder="Describe this banner image..."
-                              className="text-xs bg-background"
-                              onChange={(e) => handleUpdateSlideAlt(idx, e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
 
                   {/* Add Slide Form */}
                   <div className="border border-border/80 rounded-xl p-4 bg-secondary/5 space-y-4">
@@ -2767,6 +2906,44 @@ const AdminPanel = () => {
                           )}
                         </Button>
                       </div>
+                    </div>
+                    
+                    <div className="pt-6 border-t border-border flex justify-end gap-3">
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={async () => {
+                          if (confirm("Reset slideshow back to the 5 default banners? This will overwrite your current slideshow customization.")) {
+                            const updated = {
+                              ...siteSettings,
+                              heroSlides: DEFAULT_HERO_SLIDES
+                            };
+                            setSiteSettings(updated);
+                            await handleSaveSiteSettings(updated);
+                          }
+                        }}
+                      >
+                        Reset to defaults
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        disabled={savingSettings}
+                        onClick={() => handleSaveSiteSettings()}
+                        className="px-8"
+                      >
+                        {savingSettings ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                            Saving changes...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Save Slideshow
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -3567,6 +3744,203 @@ const AdminPanel = () => {
                       ) : (
                         <div className="text-center text-xs text-muted-foreground">
                           No image selected for preview
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Gallery Images Selector */}
+                <div className="space-y-3 pt-2 border-t border-border/40">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Plus className="w-4 h-4 text-primary" />
+                      Product Gallery Images (Upload multiple photos)
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">
+                      {prodGalleryUrls.length + prodGalleryFiles.length} images total
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Select multiple files */}
+                    <div className="space-y-2">
+                      <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-5 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer min-h-[120px]">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            if (files.length > 0) {
+                              setProdGalleryFiles((prev) => [...prev, ...files]);
+                              const newPreviews = files.map((file) => URL.createObjectURL(file));
+                              setProdGalleryPreviews((prev) => [...prev, ...newPreviews]);
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                        <span className="text-xs font-semibold text-muted-foreground">Add Gallery Images</span>
+                        <span className="text-[9px] text-muted-foreground">Click to browse multiple files</span>
+                      </div>
+
+                      {/* Manual Add URL */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider block">Or enter individual Image URL:</span>
+                        <div className="flex gap-2">
+                          <Input
+                            type="text"
+                            placeholder="https://example.com/gallery-img.jpg"
+                            id="manualGalleryUrlInput"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const input = e.currentTarget;
+                                const url = input.value.trim();
+                                if (url) {
+                                  setProdGalleryUrls((prev) => [...prev, url]);
+                                  input.value = "";
+                                }
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              const input = document.getElementById("manualGalleryUrlInput") as HTMLInputElement;
+                              const url = input?.value.trim();
+                              if (url) {
+                                setProdGalleryUrls((prev) => [...prev, url]);
+                                input.value = "";
+                              }
+                            }}
+                          >
+                            Add
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Previews grid */}
+                    <div className="border border-border rounded-lg p-3 bg-muted/5 min-h-[120px]">
+                      {prodGalleryUrls.length === 0 && prodGalleryPreviews.length === 0 ? (
+                        <div className="h-full flex items-center justify-center text-xs text-muted-foreground text-center">
+                          No gallery images added yet
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2 max-h-[160px] overflow-y-auto p-1">
+                          {/* Existing stored URLs */}
+                          {prodGalleryUrls.map((url, idx) => (
+                            <div key={`url-${idx}`} className="relative aspect-square border border-border rounded overflow-hidden group bg-black">
+                              <img src={url} alt="Gallery" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow z-10"
+                                onClick={() => setProdGalleryUrls((prev) => prev.filter((_, i) => i !== idx))}
+                              >
+                                ✕
+                              </button>
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[8px] text-white text-center py-0.5 font-sans font-medium uppercase">
+                                Stored
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* New pending files */}
+                          {prodGalleryPreviews.map((url, idx) => (
+                            <div key={`preview-${idx}`} className="relative aspect-square border border-border rounded overflow-hidden group bg-black">
+                              <img src={url} alt="New Gallery Preview" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow z-10"
+                                onClick={() => {
+                                  setProdGalleryFiles((prev) => prev.filter((_, i) => i !== idx));
+                                  setProdGalleryPreviews((prev) => prev.filter((_, i) => i !== idx));
+                                }}
+                              >
+                                ✕
+                              </button>
+                              <div className="absolute bottom-0 left-0 right-0 bg-emerald-600/90 text-[8px] text-white text-center py-0.5 font-sans font-medium uppercase">
+                                New
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Video Selector */}
+                <div className="space-y-3 pt-2 border-t border-border/40">
+                  <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="w-4 h-4 text-primary" />
+                    Product Short Video (Optional)
+                  </label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <div className="space-y-2">
+                      <div className="relative flex flex-col items-center justify-center border-2 border-dashed border-border rounded-lg p-5 bg-muted/10 hover:bg-muted/20 transition-colors cursor-pointer min-h-[90px]">
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setProdVideoFile(file);
+                              setProdVideoPreview(URL.createObjectURL(file));
+                            }
+                          }}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <Upload className="w-6 h-6 text-muted-foreground mb-1" />
+                        <span className="text-xs font-semibold text-muted-foreground">Select Video File</span>
+                        <span className="text-[9px] text-muted-foreground">MP4, WebM, etc.</span>
+                      </div>
+
+                      {/* Manual Video URL */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider block">Or enter Video URL directly:</span>
+                        <Input
+                          type="text"
+                          placeholder="https://example.com/product-video.mp4"
+                          value={prodVideoUrl}
+                          onChange={(e) => {
+                            setProdVideoUrl(e.target.value);
+                            setProdVideoFile(null);
+                            setProdVideoPreview("");
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Video Preview */}
+                    <div className="flex flex-col items-center justify-center border border-border rounded-lg p-3 bg-muted/5 min-h-[140px] max-h-[180px]">
+                      {prodVideoPreview || prodVideoUrl ? (
+                        <div className="relative w-full h-full flex flex-col items-center justify-center bg-black rounded">
+                          <video
+                            src={prodVideoPreview || prodVideoUrl}
+                            controls
+                            className="max-h-[120px] max-w-full rounded"
+                          />
+                          <button
+                            type="button"
+                            className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-md z-10"
+                            onClick={() => {
+                              setProdVideoFile(null);
+                              setProdVideoPreview("");
+                              setProdVideoUrl("");
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center text-xs text-muted-foreground">
+                          No video selected for preview
                         </div>
                       )}
                     </div>
