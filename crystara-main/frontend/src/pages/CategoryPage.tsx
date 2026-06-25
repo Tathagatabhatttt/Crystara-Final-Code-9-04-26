@@ -124,7 +124,7 @@ const CategoryPage = () => {
               <ProductCard
                 key={product.id}
                 product={{
-                  id: index,
+                  id: product.id,
                   name: `${product.name} ${product.subCategory}`,
                   price: product.price,
                   originalPrice: product.originalPrice,

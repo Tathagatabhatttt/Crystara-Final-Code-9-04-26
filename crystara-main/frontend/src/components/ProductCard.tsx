@@ -62,10 +62,10 @@ const ProductCard = ({ product, index = 0, linkTo }: ProductCardProps) => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5, delay: index * 0.05 }}
+      viewport={{ once: true, margin: "0px 0px -50px 0px" }}
+      transition={{ duration: 0.35, ease: "easeOut", delay: Math.min(index * 0.03, 0.15) }}
       className="group"
     >
       <div className="relative bg-card rounded-lg sm:rounded-xl overflow-hidden shadow-crystal hover:shadow-glow transition-shadow duration-300">
@@ -73,7 +73,7 @@ const ProductCard = ({ product, index = 0, linkTo }: ProductCardProps) => {
           <img src={product.image} alt={product.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
 
           <div className="absolute top-1.5 left-1.5 sm:top-2 sm:left-2 flex flex-col gap-1">
-            {discount > 0 && <Badge variant="destructive" className="text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5">-{discount}%</Badge>}
+            {discount > 0 && <Badge variant="destructive" className="text-[11px] sm:text-xs font-bold px-2 py-0.5 shadow-sm">{discount}% OFF</Badge>}
             <Badge variant="secondary" className="bg-accent text-accent-foreground text-[9px] sm:text-xs px-1.5 sm:px-2 py-0 sm:py-0.5 hidden sm:inline-flex">+ Exclusive Gifts</Badge>
           </div>
 
