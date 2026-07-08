@@ -224,32 +224,51 @@ const Header = () => {
 
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-      {/* Mobile Navigation — rendered OUTSIDE the fixed header so it pushes content down */}
+      {/* Mobile Navigation — Full-screen overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.nav
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden sticky top-20 z-40 bg-background border-b border-border overflow-hidden shadow-lg"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+            className="md:hidden fixed top-0 left-0 right-0 bottom-0 z-50 bg-background flex flex-col"
           >
-            <div className="container mx-auto px-4 py-3 flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
+            {/* Overlay header with close button */}
+            <div className="flex items-center justify-between px-4 h-16 border-b border-border flex-shrink-0">
+              <span className="text-xl font-serif font-bold text-gradient-mystic">Menu</span>
+              <button
+                onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1">
               {navLinks.map((link) => (
-                <Link key={link.name} to={link.href} className="text-sm font-medium py-2 hover:text-primary transition-colors" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="text-base font-medium py-3 border-b border-border/50 hover:text-primary transition-colors"
+                  onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
+                >
                   {link.name}
                 </Link>
               ))}
 
               {/* Mobile Categories */}
-              <div className="border-t border-border pt-2 mt-1">
+              <div className="mt-1">
                 <button
                   onClick={() => setIsMobileCategoriesOpen(!isMobileCategoriesOpen)}
-                  className="flex items-center justify-between w-full font-serif font-semibold text-primary mb-2 text-xs text-left"
+                  className="flex items-center justify-between w-full font-serif font-semibold text-primary py-3 border-b border-border/50 text-sm text-left"
                 >
                   <span>All Categories</span>
-                  <ChevronDown size={14} className={`transition-transform duration-200 ${isMobileCategoriesOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={16} className={`transition-transform duration-200 ${isMobileCategoriesOpen ? 'rotate-180' : ''}`} />
                 </button>
-                
+
                 <AnimatePresence initial={false}>
                   {isMobileCategoriesOpen && (
                     <motion.div
@@ -257,22 +276,22 @@ const Header = () => {
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden space-y-1 pl-1"
+                      className="overflow-hidden pl-2 mt-1 space-y-1"
                     >
                       {productCatalog.map((category) => (
-                        <div key={category.id} className="border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
+                        <div key={category.id} className="border-b border-border/30 pb-1 last:border-0">
                           <button
                             onClick={() => setActiveMobileCategory(activeMobileCategory === category.id ? null : category.id)}
-                            className={`flex items-center justify-between w-full text-xs transition-colors text-left py-1 ${
+                            className={`flex items-center justify-between w-full text-sm transition-colors text-left py-2 ${
                               activeMobileCategory === category.id
                                 ? "text-primary font-serif font-semibold"
-                                : "text-foreground font-sans hover:text-primary"
+                                : "text-foreground hover:text-primary"
                             }`}
                           >
                             <span>{category.name}</span>
-                            <ChevronDown size={12} className={`transition-transform duration-200 ${activeMobileCategory === category.id ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={13} className={`transition-transform duration-200 ${activeMobileCategory === category.id ? 'rotate-180' : ''}`} />
                           </button>
-                          
+
                           <AnimatePresence initial={false}>
                             {activeMobileCategory === category.id && (
                               <motion.div
@@ -280,16 +299,12 @@ const Header = () => {
                                 animate={{ opacity: 1, height: "auto" }}
                                 exit={{ opacity: 0, height: 0 }}
                                 transition={{ duration: 0.2 }}
-                                className="overflow-hidden pl-3 pt-1 flex flex-col gap-1"
+                                className="overflow-hidden pl-3 pb-2 flex flex-col gap-1.5"
                               >
                                 <Link
                                   to={`/category/${category.slug}`}
-                                  className="text-[11px] text-primary hover:text-primary/80 font-medium py-0.5"
-                                  onClick={() => {
-                                    setIsMenuOpen(false);
-                                    setIsMobileCategoriesOpen(false);
-                                    setActiveMobileCategory(null);
-                                  }}
+                                  className="text-xs text-primary hover:text-primary/80 font-medium py-0.5"
+                                  onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
                                 >
                                   View All {category.name} →
                                 </Link>
@@ -297,12 +312,8 @@ const Header = () => {
                                   <Link
                                     key={sub.id}
                                     to={`/category/${category.slug}/${sub.slug}`}
-                                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors py-0.5"
-                                    onClick={() => {
-                                      setIsMenuOpen(false);
-                                      setIsMobileCategoriesOpen(false);
-                                      setActiveMobileCategory(null);
-                                    }}
+                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5"
+                                    onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
                                   >
                                     {sub.name}
                                   </Link>
@@ -317,24 +328,25 @@ const Header = () => {
                 </AnimatePresence>
               </div>
 
-              <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {/* Account / Admin links */}
+              <div className="flex flex-col gap-1 mt-4 pt-4 border-t border-border">
                 {isAdmin && (
-                  <Link to="/admin" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                    <Button variant="ghost" size="sm" className="text-xs h-8 text-primary">
-                      <ShieldCheck size={14} className="mr-1" /> Admin
-                    </Button>
+                  <Link to="/admin" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
+                    className="flex items-center gap-2 text-sm font-medium py-3 text-primary border-b border-border/50"
+                  >
+                    <ShieldCheck size={16} /> Admin Panel
                   </Link>
                 )}
-                <Link to={user ? "/profile" : "/auth"} onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                  <Button variant="ghost" size="sm" className="text-xs h-8">
-                    <User size={14} className="mr-1" /> {user ? "Account" : "Sign In"}
-                  </Button>
+                <Link to={user ? "/profile" : "/auth"} onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
+                  className="flex items-center gap-2 text-sm font-medium py-3 border-b border-border/50 hover:text-primary transition-colors"
+                >
+                  <User size={16} /> {user ? "My Account" : "Sign In"}
                 </Link>
                 {!isAdmin && (
-                  <Link to="/wishlist" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                    <Button variant="ghost" size="sm" className="text-xs h-8">
-                      <Heart size={14} className="mr-1" /> Wishlist
-                    </Button>
+                  <Link to="/wishlist" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
+                    className="flex items-center gap-2 text-sm font-medium py-3 border-b border-border/50 hover:text-primary transition-colors"
+                  >
+                    <Heart size={16} /> Wishlist
                   </Link>
                 )}
               </div>
