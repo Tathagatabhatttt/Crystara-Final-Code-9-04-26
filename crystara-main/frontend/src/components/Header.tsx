@@ -236,7 +236,14 @@ const Header = () => {
           >
             {/* Overlay header with close button */}
             <div className="flex items-center justify-between px-4 h-16 border-b border-border flex-shrink-0">
-              <span className="text-xl font-serif font-bold text-gradient-mystic">Menu</span>
+              <Link to="/" className="text-left" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                <h1 className="text-2xl font-serif font-bold text-gradient-mystic leading-tight">
+                  Crystara
+                </h1>
+                <p className="text-[9px] tracking-widest text-muted-foreground -mt-0.5">
+                  Crafted for Energy. Designed for You.
+                </p>
+              </Link>
               <button
                 onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
