@@ -220,22 +220,6 @@ const PREDEFINED_CATEGORIES = [
     ]
   },
   {
-    name: "Pyramids",
-    slug: "pyramids",
-    subCategories: [
-      { name: "Orgone Pyramid", slug: "orgone-pyramid" },
-      { name: "Single Stone Pyramid", slug: "single-stone-pyramid" }
-    ]
-  },
-  {
-    name: "Frames",
-    slug: "frames",
-    subCategories: [
-      { name: "Pyrite Frame (6/6 inch)", slug: "pyrite-frame" },
-      { name: "Pyrite Multi Frame Golden Base", slug: "pyrite-multi-frame" }
-    ]
-  },
-  {
     name: "Combos",
     slug: "combos",
     subCategories: [

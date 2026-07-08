@@ -178,20 +178,6 @@ export const productCatalog: ProductCategory[] = [
     ],
   },
   {
-    id: "pyramids", name: "Pyramids", slug: "pyramids",
-    subCategories: [
-      { id: "orgone-pyramid", name: "Orgone Pyramid", slug: "orgone-pyramid", variants: createVariants("pyramids", "orgone-pyramid", orgonePyramidTypes) },
-      { id: "single-stone-pyramid", name: "Single Stone Pyramid", slug: "single-stone-pyramid", variants: createVariants("pyramids", "single-stone-pyramid", singleStonePyramidStones) },
-    ],
-  },
-  {
-    id: "frames", name: "Frames", slug: "frames",
-    subCategories: [
-      { id: "pyrite-frame", name: "Pyrite Frame (6/6 inch)", slug: "pyrite-frame", variants: createVariants("frames", "pyrite-frame", pyriteFrameDesigns) },
-      { id: "pyrite-multi-frame", name: "Pyrite Multi Frame Golden Base", slug: "pyrite-multi-frame", variants: createVariants("frames", "pyrite-multi-frame", pyriteMultiFrameDesigns) },
-    ],
-  },
-  {
     id: "combos", name: "Combos", slug: "combos",
     subCategories: [
       {
