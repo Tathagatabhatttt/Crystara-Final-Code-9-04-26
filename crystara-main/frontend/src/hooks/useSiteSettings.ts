@@ -91,7 +91,7 @@ async function fetchSiteSettings(): Promise<SiteSettings | null> {
       .maybeSingle();
 
     if (!dbError && supabaseSettings) {
-      const heroSlides = Array.isArray(supabaseSettings.hero_slides) && supabaseSettings.hero_slides.length > 0
+      const heroSlides = Array.isArray(supabaseSettings.hero_slides)
         ? supabaseSettings.hero_slides.map((slide: any) => ({
             url: slide.url || "",
             alt: slide.alt || "",
@@ -99,7 +99,7 @@ async function fetchSiteSettings(): Promise<SiteSettings | null> {
           })).filter((s: any) => s.url)
         : undefined;
 
-      const homepageCategories = Array.isArray(supabaseSettings.homepage_categories) && supabaseSettings.homepage_categories.length > 0
+      const homepageCategories = Array.isArray(supabaseSettings.homepage_categories)
         ? supabaseSettings.homepage_categories.map((cat: any) => ({
             name: cat.name || "",
             description: cat.description || "",

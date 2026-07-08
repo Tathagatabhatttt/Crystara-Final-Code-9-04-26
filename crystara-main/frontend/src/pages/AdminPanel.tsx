@@ -2726,7 +2726,7 @@ const AdminPanel = () => {
                 <CardContent className="pt-6 space-y-6">
                   {/* Current Slides List */}
                   {(() => {
-                    const slidesToRender = siteSettings.heroSlides && siteSettings.heroSlides.length > 0
+                    const slidesToRender = siteSettings.heroSlides
                       ? siteSettings.heroSlides
                       : DEFAULT_HERO_SLIDES;
 

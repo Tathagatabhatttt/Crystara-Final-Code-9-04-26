@@ -29,7 +29,7 @@ function mergeProducts(
       originalPrice: fromSanity.originalPrice ?? product.originalPrice,
       benefit: fromSanity.benefit || product.benefit,
       image: fromSanity.image || product.image,
-      galleryImages: fromSanity.galleryImages?.length
+      galleryImages: Array.isArray(fromSanity.galleryImages)
         ? fromSanity.galleryImages
         : product.galleryImages,
       featured: fromSanity.featured ?? product.featured,
@@ -146,7 +146,10 @@ export function getProductGalleryImages(
   product: FlatProduct,
   fallbackImages: string[] = [],
 ): string[] {
-  if (product.galleryImages?.length) {
+  if (Array.isArray(product.galleryImages)) {
+    if (product.image && !product.galleryImages.includes(product.image)) {
+      return [product.image, ...product.galleryImages];
+    }
     return product.galleryImages;
   }
   if (product.image) {

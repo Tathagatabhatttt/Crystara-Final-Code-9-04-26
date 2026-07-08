@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS public.site_settings (
   id TEXT PRIMARY KEY DEFAULT 'current',
-  hero_slides JSONB DEFAULT '[]'::jsonb,
+  hero_slides JSONB,
   customize_page_background TEXT,
   homepage_categories JSONB DEFAULT '[]'::jsonb,
   benefit_cards JSONB DEFAULT '[]'::jsonb,
@@ -58,5 +58,5 @@ $$;
 
 -- Insert default row so there is always a settings configuration row to query and update
 INSERT INTO public.site_settings (id, hero_slides, homepage_categories)
-VALUES ('current', '[]'::jsonb, '[]'::jsonb)
+VALUES ('current', NULL, '[]'::jsonb)
 ON CONFLICT (id) DO NOTHING;
