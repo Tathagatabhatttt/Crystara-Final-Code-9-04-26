@@ -43,9 +43,9 @@ const HeroSection = () => {
 
   if (!activeSlide) {
     return (
-      <section className="relative w-full h-[100svh] min-h-[100svh] overflow-hidden bg-black flex items-center justify-center">
-        <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-12 px-6 text-center">
-          <div className="pt-[7.5rem] md:pt-[9.5rem] max-w-5xl mx-auto px-5">
+      <section className="relative w-full h-[55vh] min-h-[55vh] md:h-[calc(100svh-112px)] md:min-h-[calc(100svh-112px)] overflow-hidden bg-black flex items-center justify-center">
+        <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-8 px-6 text-center">
+          <div className="pt-8 sm:pt-12 md:pt-16 max-w-5xl mx-auto px-5">
             <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:text-xs">
               Handpicked · Natural · Energized
             </p>
@@ -53,7 +53,7 @@ const HeroSection = () => {
               Welcome to <span className="text-gradient-mystic">Crystara</span>
             </h1>
           </div>
-          <div className="mx-auto w-full max-w-[34rem] pointer-events-auto px-5 pb-[4.75rem] sm:pb-[5.25rem]">
+          <div className="mx-auto w-full max-w-[34rem] pointer-events-auto px-5 pb-6 sm:pb-8">
             <Link to="/customize-your-own" className="block">
               <CrystalButton className="w-full px-8 py-4 text-xs font-semibold uppercase tracking-widest text-white sm:text-base">
                 <span className="relative z-10 flex items-center justify-center gap-2.5">
@@ -69,7 +69,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative w-full h-[100svh] min-h-[100svh] overflow-hidden bg-black">
+    <section className="relative w-full h-[55vh] min-h-[55vh] md:h-[calc(100svh-112px)] md:min-h-[calc(100svh-112px)] overflow-hidden bg-black">
       <div className="absolute inset-0 w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div
@@ -128,14 +128,14 @@ const HeroSection = () => {
         </>
       )}
 
-      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col">
+      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-6 md:py-10">
         {/* Headline — pinned toward top */}
-        <div className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pt-[6.75rem] text-center sm:px-6 sm:pt-[7.5rem] md:px-8 md:pt-[9.5rem]">
+        <div className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pt-4 text-center sm:px-6 sm:pt-6 md:px-8 md:pt-10">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="mb-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:mb-3 sm:text-xs sm:tracking-[0.32em] md:text-sm"
+            className="mb-1 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:mb-2 sm:text-xs sm:tracking-[0.32em] md:text-sm"
           >
             Handpicked · Natural · Energized
           </motion.p>
@@ -144,7 +144,7 @@ const HeroSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl font-serif font-bold leading-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)] min-[390px]:text-4xl sm:text-5xl md:text-6xl xl:text-7xl"
+            className="text-2xl font-serif font-bold leading-tight text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.55)] min-[390px]:text-3xl sm:text-4xl md:text-5xl xl:text-6xl"
           >
             Discover the{" "}
             <span className="text-gradient-mystic">Magic</span> of{" "}
@@ -153,19 +153,16 @@ const HeroSection = () => {
           </motion.h1>
         </div>
 
-        {/* Spacer keeps crystal visible in the middle */}
-        <div className="flex-1" aria-hidden />
-
         {/* CTA — pinned toward bottom */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pb-[4.75rem] sm:px-6 sm:pb-[5.25rem] md:px-8 md:pb-[5.75rem]"
+          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pb-2 sm:px-6 sm:pb-4 md:px-8 md:pb-6"
         >
           <Link to="/customize-your-own" className="mx-auto block w-full max-w-[34rem]">
             <CrystalButton
-              className="w-full px-8 py-4 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
+              className="w-full px-8 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
               style={{ overflow: "visible" }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2.5">

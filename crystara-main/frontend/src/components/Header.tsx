@@ -219,129 +219,129 @@ const Header = () => {
             </div>
           </div>
         </div>
+        </div>
+      </header>
 
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.nav
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="md:hidden bg-background border-t border-border overflow-hidden"
-            >
-              <div className="container mx-auto px-4 py-3 flex flex-col gap-1 max-h-[70vh] overflow-y-auto">
-                {navLinks.map((link) => (
-                  <Link key={link.name} to={link.href} className="text-sm font-medium py-2 hover:text-primary transition-colors" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                    {link.name}
-                  </Link>
-                ))}
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-                {/* Mobile Categories */}
-                <div className="border-t border-border pt-2 mt-1">
-                  <button
-                    onClick={() => setIsMobileCategoriesOpen(!isMobileCategoriesOpen)}
-                    className="flex items-center justify-between w-full font-serif font-semibold text-primary mb-2 text-xs text-left"
-                  >
-                    <span>All Categories</span>
-                    <ChevronDown size={14} className={`transition-transform duration-200 ${isMobileCategoriesOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  
-                  <AnimatePresence initial={false}>
-                    {isMobileCategoriesOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="overflow-hidden space-y-1 pl-1"
-                      >
-                        {productCatalog.map((category) => (
-                          <div key={category.id} className="border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
-                            <button
-                              onClick={() => setActiveMobileCategory(activeMobileCategory === category.id ? null : category.id)}
-                              className={`flex items-center justify-between w-full text-xs transition-colors text-left py-1 ${
-                                activeMobileCategory === category.id
-                                  ? "text-primary font-serif font-semibold"
-                                  : "text-foreground font-sans hover:text-primary"
-                              }`}
-                            >
-                              <span>{category.name}</span>
-                              <ChevronDown size={12} className={`transition-transform duration-200 ${activeMobileCategory === category.id ? 'rotate-180' : ''}`} />
-                            </button>
-                            
-                            <AnimatePresence initial={false}>
-                              {activeMobileCategory === category.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, height: 0 }}
-                                  animate={{ opacity: 1, height: "auto" }}
-                                  exit={{ opacity: 0, height: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden pl-3 pt-1 flex flex-col gap-1"
+      {/* Mobile Navigation — rendered OUTSIDE the fixed header so it pushes content down */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.nav
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden sticky top-20 z-40 bg-background border-b border-border overflow-hidden shadow-lg"
+          >
+            <div className="container mx-auto px-4 py-3 flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
+              {navLinks.map((link) => (
+                <Link key={link.name} to={link.href} className="text-sm font-medium py-2 hover:text-primary transition-colors" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                  {link.name}
+                </Link>
+              ))}
+
+              {/* Mobile Categories */}
+              <div className="border-t border-border pt-2 mt-1">
+                <button
+                  onClick={() => setIsMobileCategoriesOpen(!isMobileCategoriesOpen)}
+                  className="flex items-center justify-between w-full font-serif font-semibold text-primary mb-2 text-xs text-left"
+                >
+                  <span>All Categories</span>
+                  <ChevronDown size={14} className={`transition-transform duration-200 ${isMobileCategoriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <AnimatePresence initial={false}>
+                  {isMobileCategoriesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden space-y-1 pl-1"
+                    >
+                      {productCatalog.map((category) => (
+                        <div key={category.id} className="border-b border-border/40 pb-1.5 last:border-0 last:pb-0">
+                          <button
+                            onClick={() => setActiveMobileCategory(activeMobileCategory === category.id ? null : category.id)}
+                            className={`flex items-center justify-between w-full text-xs transition-colors text-left py-1 ${
+                              activeMobileCategory === category.id
+                                ? "text-primary font-serif font-semibold"
+                                : "text-foreground font-sans hover:text-primary"
+                            }`}
+                          >
+                            <span>{category.name}</span>
+                            <ChevronDown size={12} className={`transition-transform duration-200 ${activeMobileCategory === category.id ? 'rotate-180' : ''}`} />
+                          </button>
+                          
+                          <AnimatePresence initial={false}>
+                            {activeMobileCategory === category.id && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.2 }}
+                                className="overflow-hidden pl-3 pt-1 flex flex-col gap-1"
+                              >
+                                <Link
+                                  to={`/category/${category.slug}`}
+                                  className="text-[11px] text-primary hover:text-primary/80 font-medium py-0.5"
+                                  onClick={() => {
+                                    setIsMenuOpen(false);
+                                    setIsMobileCategoriesOpen(false);
+                                    setActiveMobileCategory(null);
+                                  }}
                                 >
+                                  View All {category.name} →
+                                </Link>
+                                {category.subCategories.map((sub) => (
                                   <Link
-                                    to={`/category/${category.slug}`}
-                                    className="text-[11px] text-primary hover:text-primary/80 font-medium py-0.5"
+                                    key={sub.id}
+                                    to={`/category/${category.slug}/${sub.slug}`}
+                                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors py-0.5"
                                     onClick={() => {
                                       setIsMenuOpen(false);
                                       setIsMobileCategoriesOpen(false);
                                       setActiveMobileCategory(null);
                                     }}
                                   >
-                                    View All {category.name} →
+                                    {sub.name}
                                   </Link>
-                                  {category.subCategories.map((sub) => (
-                                    <Link
-                                      key={sub.id}
-                                      to={`/category/${category.slug}/${sub.slug}`}
-                                      className="text-[11px] text-muted-foreground hover:text-foreground transition-colors py-0.5"
-                                      onClick={() => {
-                                        setIsMenuOpen(false);
-                                        setIsMobileCategoriesOpen(false);
-                                        setActiveMobileCategory(null);
-                                      }}
-                                    >
-                                      {sub.name}
-                                    </Link>
-                                  ))}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2 border-t border-border">
-                  {isAdmin && (
-                    <Link to="/admin" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                      <Button variant="ghost" size="sm" className="text-xs h-8 text-primary">
-                        <ShieldCheck size={14} className="mr-1" /> Admin
-                      </Button>
-                    </Link>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      ))}
+                    </motion.div>
                   )}
-                  <Link to={user ? "/profile" : "/auth"} onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                    <Button variant="ghost" size="sm" className="text-xs h-8">
-                      <User size={14} className="mr-1" /> {user ? "Account" : "Sign In"}
+                </AnimatePresence>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2 border-t border-border">
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                    <Button variant="ghost" size="sm" className="text-xs h-8 text-primary">
+                      <ShieldCheck size={14} className="mr-1" /> Admin
                     </Button>
                   </Link>
-                  {!isAdmin && (
-                    <Link to="/wishlist" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
-                      <Button variant="ghost" size="sm" className="text-xs h-8">
-                        <Heart size={14} className="mr-1" /> Wishlist
-                      </Button>
-                    </Link>
-                  )}
-                </div>
+                )}
+                <Link to={user ? "/profile" : "/auth"} onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                  <Button variant="ghost" size="sm" className="text-xs h-8">
+                    <User size={14} className="mr-1" /> {user ? "Account" : "Sign In"}
+                  </Button>
+                </Link>
+                {!isAdmin && (
+                  <Link to="/wishlist" onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}>
+                    <Button variant="ghost" size="sm" className="text-xs h-8">
+                      <Heart size={14} className="mr-1" /> Wishlist
+                    </Button>
+                  </Link>
+                )}
               </div>
-            </motion.nav>
-          )}
-        </AnimatePresence>
-        </div>
-      </header>
-
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+            </div>
+          </motion.nav>
+        )}
+      </AnimatePresence>
     </>
   );
 };
