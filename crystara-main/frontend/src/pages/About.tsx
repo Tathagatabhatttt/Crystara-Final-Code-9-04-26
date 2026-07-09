@@ -3,6 +3,12 @@ import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
 import { Gem, Shield, Sparkles, Truck, Award, Heart, Globe, Mail, MessageCircle, Diamond, Leaf, Droplets, Hammer, BookOpen, Package } from "lucide-react";
 
+import member1 from "@/assets/team-member-1.jpg";
+import member2 from "@/assets/team-member-2.jpg";
+import member3 from "@/assets/team-member-3.jpg";
+import member4 from "@/assets/team-member-4.jpg";
+import member5 from "@/assets/team-member-5.jpg";
+
 const About = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -88,6 +94,46 @@ const About = () => {
               <p className="text-foreground/80 leading-relaxed text-sm md:text-base max-w-2xl mx-auto italic">
                 "To democratize high-vibrational living by curating the world's most exquisite crystals, fostering a global community of mindful individuals who seek balance in an increasingly digital world."
               </p>
+            </div>
+          </motion.div>
+
+          {/* Our Team Section */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-20 sm:mb-28">
+            <div className="text-center mb-12">
+              <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold tracking-widest uppercase mb-4">Our Alchemists</span>
+              <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Meet the Team</h2>
+              <p className="text-foreground/80 max-w-xl mx-auto text-sm">The minds and healers behind Crystara's curations and spiritual energy.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+              {[
+                { name: "Souvik Saha", role: "Marketing Head", image: member1 },
+                { name: "Anushka Ganguly", role: "Management Head", image: member2 },
+                { name: "Aniket Nandi", role: "Social Media Handler", image: member3 },
+                { name: "Priyanshu Kangshabanik", role: "Founder and CEO", image: member4 },
+                { name: "Tathagata Bhattacherjee", role: "Developer", image: member5 },
+              ].map((member, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  className="group bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/40 hover:shadow-xl transition-all duration-300 flex flex-col"
+                >
+                  <div className="aspect-[3/4] w-full overflow-hidden bg-secondary relative">
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  </div>
+                  <div className="p-5 text-center flex-1 flex flex-col justify-center bg-card">
+                    <h3 className="font-serif font-semibold text-base text-foreground group-hover:text-primary transition-colors duration-200">{member.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{member.role}</p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </motion.div>
 
