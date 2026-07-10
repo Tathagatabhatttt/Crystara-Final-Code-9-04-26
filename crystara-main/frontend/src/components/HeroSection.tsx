@@ -128,9 +128,9 @@ const HeroSection = () => {
         </>
       )}
 
-      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-6 md:py-10">
+      <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between pt-28 pb-6 md:pt-28 md:pb-10">
         {/* Headline — pinned toward top */}
-        <div className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pt-4 text-center sm:px-6 sm:pt-6 md:px-8 md:pt-10">
+        <div className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pt-2 text-center sm:px-6 sm:pt-4 md:px-8 md:pt-6">
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -158,12 +158,11 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pb-2 sm:px-6 sm:pb-4 md:px-8 md:pb-6"
+          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pr-20 pb-2 sm:px-6 sm:pr-6 sm:pb-4 md:px-8 md:pr-8 md:pb-6"
         >
           <Link to="/customize-your-own" className="mx-auto block w-full max-w-[34rem]">
             <CrystalButton
               className="w-full px-4 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
-              style={{ overflow: "visible" }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2.5">
                 <Sparkles className="h-4 w-4 flex-shrink-0 text-white sm:h-5 sm:w-5" />
