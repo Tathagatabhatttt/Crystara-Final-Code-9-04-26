@@ -158,18 +158,24 @@ const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pr-20 pb-2 sm:px-6 sm:pr-6 sm:pb-4 md:px-8 md:pr-8 md:pb-6"
+          className="pointer-events-auto mx-auto w-full max-w-5xl px-5 pb-2 sm:px-6 sm:pb-4 md:px-8 md:pb-6"
         >
-          <Link to="/customize-your-own" className="mx-auto block w-full max-w-[34rem]">
-            <CrystalButton
-              className="w-full px-4 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2.5">
-                <Sparkles className="h-4 w-4 flex-shrink-0 text-white sm:h-5 sm:w-5" />
-                Customize Your Own
-              </span>
-            </CrystalButton>
-          </Link>
+          <div className="flex items-center justify-center">
+            {/* Left spacer on mobile to balance the WhatsApp button on the right */}
+            <div className="w-14 flex-shrink-0 sm:hidden" aria-hidden="true" />
+            <Link to="/customize-your-own" className="flex-1 max-w-[34rem]">
+              <CrystalButton
+                className="w-full px-4 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2.5">
+                  <Sparkles className="h-4 w-4 flex-shrink-0 text-white sm:h-5 sm:w-5" />
+                  Customize Your Own
+                </span>
+              </CrystalButton>
+            </Link>
+            {/* Right spacer on mobile to balance and clear the WhatsApp button */}
+            <div className="w-14 flex-shrink-0 sm:hidden" aria-hidden="true" />
+          </div>
         </motion.div>
       </div>
 
