@@ -103,11 +103,11 @@ const ProductCard = ({ product, index = 0, linkTo }: ProductCardProps) => {
 
           {/* Desktop: hover add to cart */}
           {!isAdmin && (
-          <div className="absolute inset-x-0 bottom-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden sm:block">
-            <Button className="w-full text-xs h-8" size="sm" onClick={handleAddToCart}>
-              <ShoppingBag size={14} className="mr-1.5" /> Add to Cart
-            </Button>
-          </div>
+            <div className="absolute inset-x-0 bottom-0 p-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 hidden sm:block">
+              <Button className="w-full text-xs h-8" size="sm" onClick={handleAddToCart}>
+                <ShoppingBag size={14} className="mr-1.5" /> Add to Cart
+              </Button>
+            </div>
           )}
         </Link>
 
