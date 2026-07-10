@@ -63,11 +63,11 @@ const Header = () => {
             </button>
 
             {/* Logo */}
-            <Link to="/" className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex-shrink-0 text-center z-10">
+            <Link to="/" className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 flex-shrink-0 text-center z-10 w-48">
               <h1 className="text-2xl md:text-3xl font-serif font-bold text-gradient-mystic leading-tight">
                 Crystara
               </h1>
-              <p className="text-[9px] md:text-[10px] tracking-widest text-muted-foreground -mt-0.5">
+              <p className="text-[9px] md:text-[10px] tracking-widest text-muted-foreground -mt-0.5 whitespace-nowrap overflow-visible">
                 Crafted for Energy. Designed for You.
               </p>
             </Link>

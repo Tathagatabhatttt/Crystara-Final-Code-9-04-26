@@ -162,7 +162,7 @@ const HeroSection = () => {
         >
           <Link to="/customize-your-own" className="mx-auto block w-full max-w-[34rem]">
             <CrystalButton
-              className="w-full px-8 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
+              className="w-full px-4 py-3.5 text-xs font-semibold uppercase tracking-widest text-white min-[390px]:text-sm sm:px-14 sm:py-5 sm:text-base"
               style={{ overflow: "visible" }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2.5">
