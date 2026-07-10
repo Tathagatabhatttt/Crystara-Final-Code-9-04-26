@@ -47,7 +47,7 @@ function mergeProducts(
     }
   });
 
-  return merged;
+  return merged.filter((p) => !p.isDeleted);
 }
 
 export function useCatalogProducts() {

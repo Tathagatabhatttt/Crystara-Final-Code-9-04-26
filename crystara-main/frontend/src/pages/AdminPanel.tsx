@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
-import { getProductById } from "@/data/products";
+import { getProductById, productCatalog } from "@/data/products";
 import { toast } from "sonner";
 import { API_URL } from "@/lib/api";
 import { supabase } from "@/integrations/supabase/client";
@@ -752,7 +752,35 @@ const AdminPanel = () => {
   };
 
   const handleDeleteProduct = async (product: any) => {
-    const isFromSanity = product.isFromSanity;
+    const isStatic = productCatalog.some(cat => 
+      cat.subCategories.some(sub => 
+        sub.variants.some(v => v.id === product.id)
+      )
+    );
+    const isFromSanity = product.isFromSanity || isStatic;
+    
+    if (product.isDeleted) {
+      if (!confirm("Are you sure you want to restore this product back to the shop?")) {
+        return false;
+      }
+      try {
+        const { error } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", product.id);
+          
+        if (error) throw error;
+        
+        toast.success("Product restored to shop successfully");
+        fetchSupabaseProducts();
+        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        return true;
+      } catch (err: any) {
+        console.error("Restore product error:", err);
+        toast.error(err.message || "Failed to restore product");
+        return false;
+      }
+    }
     
     if (isFromSanity) {
       if (!confirm("Are you sure you want to delete and hide this product from the shop? (This will hide it from customer views.)")) {
@@ -2087,6 +2115,11 @@ const AdminPanel = () => {
                                       Featured
                                     </Badge>
                                   )}
+                                  {product.isDeleted && (
+                                    <Badge variant="destructive" className="text-[10px] py-0 px-1.5 bg-rose-600/90 text-white shadow-sm border-0 font-semibold tracking-wide uppercase">
+                                      Hidden / Deleted
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="text-xs text-muted-foreground font-mono">
                                   ID: {product.id}
@@ -2142,10 +2175,23 @@ const AdminPanel = () => {
                                       variant="ghost"
                                       size="sm"
                                       onClick={() => handleDeleteProduct(product)}
-                                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                                      className={
+                                        product.isDeleted
+                                          ? "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-500/10 gap-1.5"
+                                          : "text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                                      }
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                      Delete
+                                      {product.isDeleted ? (
+                                        <>
+                                          <RotateCcw className="w-3.5 h-3.5" />
+                                          Restore
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                          Delete
+                                        </>
+                                      )}
                                     </Button>
                                   )}
                                 </div>
@@ -3934,18 +3980,38 @@ const AdminPanel = () => {
                 {/* Footer Buttons */}
                 <div className="flex justify-between items-center pt-4 border-t border-border">
                   <div className="flex gap-2">
-                    {editingProduct && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleDeleteProductFromModal}
-                        disabled={savingProduct}
-                        className="gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        {editingProduct.isFromSanity ? "Delete/Hide from Shop" : "Delete Product"}
-                      </Button>
-                    )}
+                    {editingProduct && (() => {
+                      const isProductStatic = productCatalog.some(cat => 
+                        cat.subCategories.some(sub => 
+                          sub.variants.some(v => v.id === editingProduct.id)
+                        )
+                      );
+                      const displayDeleteLabel = (editingProduct.isFromSanity || isProductStatic) 
+                        ? "Delete/Hide from Shop" 
+                        : "Delete Product";
+                        
+                      return (
+                        <Button
+                          type="button"
+                          variant={editingProduct.isDeleted ? "default" : "destructive"}
+                          onClick={handleDeleteProductFromModal}
+                          disabled={savingProduct}
+                          className={editingProduct.isDeleted ? "bg-emerald-600 hover:bg-emerald-700 text-white gap-2" : "gap-2"}
+                        >
+                          {editingProduct.isDeleted ? (
+                            <>
+                              <RotateCcw className="w-4 h-4" />
+                              Restore to Shop
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="w-4 h-4" />
+                              {displayDeleteLabel}
+                            </>
+                          )}
+                        </Button>
+                      );
+                    })()}
                     {editingProduct && editingProduct.isFromSanity && editingProduct.isCustom && (
                       <Button
                         type="button"

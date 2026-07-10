@@ -135,20 +135,13 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
         if (!sp.id) return;
         const idx = merged.findIndex((p) => p.id === sp.id);
         if (idx !== -1) {
-            if (sp.isDeleted) {
-                // If it is marked as deleted/hidden, remove it from the catalog entirely
-                merged.splice(idx, 1);
-            } else {
-                merged[idx] = { ...sp, isFromSanity: true };
-            }
+            merged[idx] = { ...sp, isFromSanity: true };
         } else {
-            if (!sp.isDeleted) {
-                merged.push({ ...sp, isFromSanity: false });
-            }
+            merged.push({ ...sp, isFromSanity: false });
         }
     });
 
-    return merged.filter(p => !p.isDeleted);
+    return merged;
 }
 
 export function useProductCatalog() {
