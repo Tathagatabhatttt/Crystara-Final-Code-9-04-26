@@ -18,6 +18,18 @@ const CustomizeYourOwnPage = () => {
   const [error, setError] = useState("");
   const [isFocused, setIsFocused] = useState(false);
 
+  // Mulank (Psychic Number) = reduce the day of birth to a single digit (1-9)
+  const calculateMulank = (date: string) => {
+    if (!date) return null;
+    const day = parseInt(date.split("-")[2]);
+    let mulank = day;
+    while (mulank > 9) {
+      mulank = Math.floor(mulank / 10) + (mulank % 10);
+    }
+    return mulank;
+  };
+
+  // Bhagyank (Destiny Number) = reduce the sum of full DOB (day + month + year) to a single digit (1-9)
   const calculateDestinyNumber = (date: string) => {
     if (!date) return null;
     const parts = date.split("-");
@@ -40,7 +52,8 @@ const CustomizeYourOwnPage = () => {
     }
 
     const destinyNumber = calculateDestinyNumber(dateOfBirth);
-    navigate(`/discover-your-crystals?destiny=${destinyNumber}&dob=${dateOfBirth}`);
+    const mulankNumber = calculateMulank(dateOfBirth);
+    navigate(`/discover-your-crystals?destiny=${destinyNumber}&mulank=${mulankNumber}&dob=${dateOfBirth}`);
   };
 
   return (
