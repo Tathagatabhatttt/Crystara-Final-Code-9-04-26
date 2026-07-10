@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { sanityClient } from "@/lib/sanity";
-import type { ProductCategory, ProductSubCategory, ProductVariant } from "@/data/products";
+import type { ProductSubCategory, ProductVariant } from "@/data/products";
+import { getAllProducts as getStaticProducts, type ProductCategory } from "@/data/products";
 import { supabase } from "@/integrations/supabase/client";
 
 // GROQ query to fetch all products with their referenced category and sub-category
@@ -128,14 +129,30 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
         supabasePromise
     ]);
 
-    // Merge or concatenate both catalogs
-    // If they have the same ID, Supabase products take precedence so the client can override them!
-    const merged = sanityProducts.map(p => ({ ...p, isFromSanity: true }));
+    const staticProducts = getStaticProducts().map(p => ({
+        ...p,
+        isFromSanity: false,
+        featured: p.featured || false,
+    })) as FlatProduct[];
+
+    const merged = [...staticProducts];
+
+    // 1. Merge Sanity products (predefined products, they take precedence over static)
+    sanityProducts.forEach((p) => {
+        const idx = merged.findIndex((m) => m.id === p.id);
+        if (idx !== -1) {
+            merged[idx] = { ...merged[idx], ...p, isFromSanity: true };
+        } else {
+            merged.push({ ...p, isFromSanity: true });
+        }
+    });
+
+    // 2. Merge Supabase products (overrides and custom database products)
     supabaseProducts.forEach((sp) => {
         if (!sp.id) return;
-        const idx = merged.findIndex((p) => p.id === sp.id);
+        const idx = merged.findIndex((m) => m.id === sp.id);
         if (idx !== -1) {
-            merged[idx] = { ...sp, isFromSanity: true };
+            merged[idx] = { ...merged[idx], ...sp };
         } else {
             merged.push({ ...sp, isFromSanity: false });
         }

@@ -43,7 +43,7 @@ const HeroSection = () => {
 
   if (!activeSlide) {
     return (
-      <section className="relative w-full h-[55vh] min-h-[55vh] md:h-[calc(100svh-112px)] md:min-h-[calc(100svh-112px)] overflow-hidden bg-black flex items-center justify-center">
+      <section className="relative w-full h-[100svh] overflow-hidden bg-black flex items-center justify-center">
         <div className="pointer-events-none relative z-10 flex h-full w-full flex-col justify-between py-8 px-6 text-center">
           <div className="pt-8 sm:pt-12 md:pt-16 max-w-5xl mx-auto px-5">
             <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.28em] text-white/85 sm:text-xs">
@@ -69,7 +69,7 @@ const HeroSection = () => {
   }
 
   return (
-    <section className="relative w-full h-[55vh] min-h-[55vh] md:h-[calc(100svh-112px)] md:min-h-[calc(100svh-112px)] overflow-hidden bg-black">
+    <section className="relative w-full h-[100svh] overflow-hidden bg-black">
       <div className="absolute inset-0 w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div

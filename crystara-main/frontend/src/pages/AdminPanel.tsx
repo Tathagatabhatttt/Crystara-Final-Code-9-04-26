@@ -2170,7 +2170,6 @@ const AdminPanel = () => {
                                     <Pencil className="w-3.5 h-3.5" />
                                     {isCustom ? "Edit" : "Override"}
                                   </Button>
-                                  {isCustom && (
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -2193,7 +2192,6 @@ const AdminPanel = () => {
                                         </>
                                       )}
                                     </Button>
-                                  )}
                                 </div>
                               </TableCell>
                             </TableRow>
