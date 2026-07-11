@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { getAllProducts } from "@/data/products";
+import { useCatalogProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/ProductCard";
 import { Sparkles, Zap, Award, Star, Compass, ShieldCheck } from "lucide-react";
 
@@ -160,7 +160,7 @@ const DiscoverYourCrystals = () => {
   const mulankInfo = numerologyData[mulank as keyof typeof numerologyData] || numerologyData[1];
   const harmony = getPlanetaryHarmony(mulank, destiny);
 
-  const allProducts = getAllProducts();
+  const { data: allProducts } = useCatalogProducts();
 
   // Evaluate matching alignments for products
   const productsWithAlignment = useMemo(() => {

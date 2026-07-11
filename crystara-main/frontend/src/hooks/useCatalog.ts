@@ -11,53 +11,27 @@ import {
 } from "@/data/products";
 import { useAllProducts, useProductCatalog, type FlatProduct } from "@/hooks/useProducts";
 
-function mergeProducts(
-  staticProducts: FlatProduct[],
-  sanityProducts: FlatProduct[],
-): FlatProduct[] {
-  const sanityMap = new Map(sanityProducts.map((product) => [product.id, product]));
-
-  const merged = staticProducts.map((product) => {
-    const fromSanity = sanityMap.get(product.id);
-    if (!fromSanity) return product;
-
-    return {
-      ...product,
-      name: fromSanity.name || product.name,
-      stone: fromSanity.stone || product.stone,
-      price: fromSanity.price ?? product.price,
-      originalPrice: fromSanity.originalPrice ?? product.originalPrice,
-      benefit: fromSanity.benefit || product.benefit,
-      image: fromSanity.image || product.image,
-      galleryImages: Array.isArray(fromSanity.galleryImages)
-        ? fromSanity.galleryImages
-        : product.galleryImages,
-      featured: fromSanity.featured ?? product.featured,
-      stock: fromSanity.stock,
-      isDeleted: fromSanity.isDeleted,
-      isFromSanity: fromSanity.isFromSanity,
-      videoUrl: fromSanity.videoUrl || product.videoUrl,
-    };
-  });
-
-  const staticIds = new Set(staticProducts.map(p => p.id));
-  sanityProducts.forEach((sp) => {
-    if (!staticIds.has(sp.id)) {
-      merged.push(sp);
-    }
-  });
-
-  return merged.filter((p) => !p.isDeleted);
-}
-
+/**
+ * Primary hook for all storefront product data.
+ *
+ * `useAllProducts` (from useProducts.ts) already merges:
+ *   static hardcoded products  ←  Sanity CMS overrides  ←  Supabase overrides
+ * and filters out any product with `isDeleted === true`.
+ *
+ * We fall back to the raw static list ONLY while the query is still loading
+ * for the very first time, so the page isn't empty during that brief moment.
+ */
 export function useCatalogProducts() {
   const query = useAllProducts();
-  const staticProducts = useMemo(() => getStaticProducts(), []);
+  const staticFallback = useMemo(() => getStaticProducts(), []);
 
   const data = useMemo(() => {
-    if (!query.data?.length) return staticProducts;
-    return mergeProducts(staticProducts, query.data);
-  }, [query.data, staticProducts]);
+    // Once the query has resolved at least once, always use its result.
+    // query.data is already fully merged and deletion-filtered.
+    if (query.data) return query.data;
+    // While still loading for the first time, show the static catalog.
+    return staticFallback;
+  }, [query.data, staticFallback]);
 
   return { ...query, data };
 }

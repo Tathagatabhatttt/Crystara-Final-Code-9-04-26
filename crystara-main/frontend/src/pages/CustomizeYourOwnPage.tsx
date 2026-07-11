@@ -16,7 +16,6 @@ const CustomizeYourOwnPage = () => {
   const navigate = useNavigate();
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [error, setError] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
 
   // Mulank (Psychic Number) = reduce the day of birth to a single digit (1-9)
   const calculateMulank = (date: string) => {
@@ -123,20 +122,29 @@ const CustomizeYourOwnPage = () => {
                 Date of Birth
               </label>
 
-              {/* Date Input */}
-              <input
-                type={isFocused || dateOfBirth ? "date" : "text"}
-                value={dateOfBirth}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                onChange={(e) => {
-                  setDateOfBirth(e.target.value);
-                  setError("");
-                }}
-                placeholder="Select Date of Birth"
-                className="w-full h-12 px-6 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-accent transition-all duration-300 text-center relative"
-                style={{ colorScheme: "dark" }}
-              />
+              {/* Date Input — always type="date" so iOS Safari shows the native picker */}
+              <div className="relative">
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => {
+                    setDateOfBirth(e.target.value);
+                    setError("");
+                  }}
+                  max={new Date().toISOString().split("T")[0]}
+                  className="w-full h-12 px-6 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg focus:outline-none focus:border-accent transition-all duration-300 text-center"
+                  style={{
+                    colorScheme: "dark",
+                    color: dateOfBirth ? "white" : "transparent",
+                  }}
+                />
+                {/* Placeholder overlay — covers native dd-mm-yyyy text when empty */}
+                {!dateOfBirth && (
+                  <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white/40 text-sm rounded-lg">
+                    Select Date of Birth
+                  </span>
+                )}
+              </div>
 
               {/* Error Message */}
               {error && (

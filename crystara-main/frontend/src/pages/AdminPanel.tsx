@@ -773,7 +773,7 @@ const AdminPanel = () => {
         
         toast.success("Product restored to shop successfully");
         fetchSupabaseProducts();
-        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
         return true;
       } catch (err: any) {
         console.error("Restore product error:", err);
@@ -805,7 +805,7 @@ const AdminPanel = () => {
         
         toast.success("Product hidden from shop successfully");
         fetchSupabaseProducts();
-        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
         return true;
       } catch (err: any) {
         console.error("Hide product error:", err);
@@ -827,7 +827,7 @@ const AdminPanel = () => {
         
         toast.success("Product deleted successfully");
         fetchSupabaseProducts();
-        queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
         return true;
       } catch (err: any) {
         console.error("Delete product error:", err);

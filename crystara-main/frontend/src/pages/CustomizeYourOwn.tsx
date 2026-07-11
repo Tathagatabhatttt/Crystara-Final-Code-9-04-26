@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { getAllProducts } from "@/data/products";
+import { useCatalogProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -107,7 +107,7 @@ const CustomizeYourOwnPage = () => {
   }, [user, navigate]);
 
   const data = destinyData[destiny] || destinyData[1];
-  const allProducts = getAllProducts();
+  const { data: allProducts } = useCatalogProducts();
 
   const getFilteredProducts = () => {
     if (activeCategory === "All") {

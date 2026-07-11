@@ -158,7 +158,8 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
         }
     });
 
-    return merged;
+    // Filter out any product marked as deleted
+    return merged.filter((p) => !p.isDeleted);
 }
 
 export function useProductCatalog() {
@@ -174,8 +175,9 @@ export function useAllProducts() {
     return useQuery<FlatProduct[]>({
         queryKey: ["sanity-all-products"],
         queryFn: fetchAllProducts,
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 30,
+        staleTime: 0,              // Always consider data stale so refetch runs on mount
+        gcTime: 1000 * 60 * 30,   // Keep in memory for 30 min but always revalidate
+        refetchOnWindowFocus: true, // Refetch when admin returns to the tab after editing
     });
 }
 
