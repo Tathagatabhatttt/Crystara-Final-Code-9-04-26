@@ -7,6 +7,7 @@ import { Sparkles } from "lucide-react";
 import { CrystalButton } from "@/components/CrystalButton";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { resolveHeroSlides } from "@/lib/sanityImage";
+import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
 
 const CustomizeYourOwnPage = () => {
   const { data: siteSettings } = useSiteSettings();
@@ -16,33 +17,6 @@ const CustomizeYourOwnPage = () => {
   const navigate = useNavigate();
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [error, setError] = useState("");
-
-  // Mulank (Psychic Number) = reduce the day of birth to a single digit (1-9)
-  const calculateMulank = (date: string) => {
-    if (!date) return null;
-    const day = parseInt(date.split("-")[2]);
-    let mulank = day;
-    while (mulank > 9) {
-      mulank = Math.floor(mulank / 10) + (mulank % 10);
-    }
-    return mulank;
-  };
-
-  // Bhagyank (Destiny Number) = reduce the sum of full DOB (day + month + year) to a single digit (1-9)
-  const calculateDestinyNumber = (date: string) => {
-    if (!date) return null;
-    const parts = date.split("-");
-    const day = parseInt(parts[2]);
-    const month = parseInt(parts[1]);
-    const year = parseInt(parts[0]);
-
-    const sum = day + month + year;
-    let destiny = sum;
-    while (destiny > 9) {
-      destiny = Math.floor(destiny / 10) + (destiny % 10);
-    }
-    return destiny;
-  };
 
   const handleDiscoverCrystals = () => {
     if (!dateOfBirth) {
@@ -131,7 +105,6 @@ const CustomizeYourOwnPage = () => {
                     setDateOfBirth(e.target.value);
                     setError("");
                   }}
-                  max={new Date().toISOString().split("T")[0]}
                   className="w-full h-12 px-6 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg focus:outline-none focus:border-accent transition-all duration-300 text-center"
                   style={{
                     colorScheme: "dark",

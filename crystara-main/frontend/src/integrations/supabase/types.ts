@@ -118,7 +118,7 @@ const getPricing = (categorySlug: string, subCategorySlug: string) => {
 const chipBraceletStones = ["Money Magnet", "Green Aventurine", "Turquoise", "Lapis", "Amethyst", "Citrine Natural", "Clear Quartz", "Rose Quartz", "Sun Stone", "Green Jade", "Black Tourmaline", "Pyrite", "Opal", "Hematite"];
 const beadsBraceletStones = ["Tiger Eye", "Money Magnet", "Green Aventurine", "Lapis", "Amethyst", "Citrine", "Citrine Natural", "Rose Quartz", "Sun Stone", "Green Jade", "Pyrite", "Hematite", "7 Chakra", "Golden Pyrite", "Sunstone", "OM Money Multi Crystal", "OM Money Black", "Opalite"];
 const ringStones = ["Tiger Eye", "Lapis", "Amethyst", "Citrine", "Rose Quartz", "Green Jade", "Pyrite", "Rainbow Moon Stone", "Turquoise"];
-const ringStyles = ["Diamond Cut Oval Faced", "Round Gem Stone", "Heart Shaped", "Feather Touch", "Moon Shaped", "Boho"];
+const ringStyles = ["Diamond Cut Oval Faced", "Heart Shaped", "Moon Shaped"];
 const silverCapStones = ["Tiger Eye", "Lapis", "Amethyst", "Black Tourmaline", "Clear Quartz", "Larvikite", "Sodalite", "Rose Quartz", "Dalmatian"];
 const heartPendantStones = ["Tiger Eye", "Lapis", "Amethyst", "Blue Gold Stone", "Clear Quartz", "Rose Quartz", "Sunstone", "Green Jade"];
 const tortoisePendantStones = ["Tiger Eye", "Lapis", "Amethyst", "Black Tourmaline", "Clear Quartz", "Opalite", "Green Aventurine", "Rose Quartz"];
@@ -168,13 +168,9 @@ export const productCatalog: ProductCategory[] = [
   {
     id: "lockets", name: "Lockets / Pendants", slug: "lockets",
     subCategories: [
-      { id: "silver-cap-pendant", name: "Silver Cap Pendant", slug: "silver-cap-pendant", variants: createVariants("lockets", "silver-cap-pendant", silverCapStones) },
-      { id: "heart-shaped-pendant", name: "Heart Shaped Pendant", slug: "heart-shaped-pendant", variants: createVariants("lockets", "heart-shaped-pendant", heartPendantStones) },
       { id: "tortoise-shaped-pendant", name: "Tortoise Shaped Pendant", slug: "tortoise-shaped-pendant", variants: createVariants("lockets", "tortoise-shaped-pendant", tortoisePendantStones) },
       { id: "moon-owl-shaped-pendant", name: "Moon Owl Shaped Pendant", slug: "moon-owl-shaped-pendant", variants: createVariants("lockets", "moon-owl-shaped-pendant", moonOwlStones) },
       { id: "thread-wrapped-pendant", name: "Thread Wrapped Pendant", slug: "thread-wrapped-pendant", variants: createVariants("lockets", "thread-wrapped-pendant", threadWrappedStones) },
-      { id: "silver-wire-wrapped-pendant", name: "Silver Wire Wrapped Pendant", slug: "silver-wire-wrapped-pendant", variants: createVariants("lockets", "silver-wire-wrapped-pendant", silverWireWrappedStones) },
-      { id: "raw-stone-pendant", name: "Raw Stone Pendant", slug: "raw-stone-pendant", variants: createVariants("lockets", "raw-stone-pendant", rawStonePendantStones) },
     ],
   },
   {

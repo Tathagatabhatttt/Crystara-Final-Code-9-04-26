@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { useCatalogProducts } from "@/hooks/useCatalog";
 import ProductCard from "@/components/ProductCard";
 import { Sparkles, Zap, Award, Star, Compass, ShieldCheck } from "lucide-react";
+import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
 
 // Professional Vedic Numerology database with Ruling Planets, description, traits, and crystal alignment
 const numerologyData = {
@@ -125,9 +126,26 @@ const getPlanetaryHarmony = (m: number, d: number) => {
 
 const DiscoverYourCrystals = () => {
   const [searchParams] = useSearchParams();
-  const destiny = parseInt(searchParams.get("destiny") || "1");
-  const mulank = parseInt(searchParams.get("mulank") || "1");
   const dob = searchParams.get("dob");
+
+  const mulank = dob ? calculateMulank(dob) : parseInt(searchParams.get("mulank") || "1", 10);
+  const destiny = dob ? calculateDestinyNumber(dob) : parseInt(searchParams.get("destiny") || "1", 10);
+
+  // Timezone-safe date formatting to avoid shifts on devices in other timezones
+  const formatDobSafe = (dobStr: string | null) => {
+    if (!dobStr) return "";
+    const parts = dobStr.split("-");
+    if (parts.length !== 3) return dobStr;
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // 0-indexed
+    const day = parseInt(parts[2], 10);
+    const localDate = new Date(year, month, day);
+    return localDate.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric"
+    });
+  };
 
   const [activeTab, setActiveTab] = useState<"all" | "ruling" | "destiny" | "dual">("all");
   const [isLoading, setIsLoading] = useState(true);
@@ -140,15 +158,17 @@ const DiscoverYourCrystals = () => {
     "Aligning cosmic planets and energy fields...",
     "Curating your personalized crystals..."
   ];
+  const loadingStepDelayMs = 800;
+  const loadingHoldMs = 3600;
 
   useEffect(() => {
     const stepInterval = setInterval(() => {
       setLoadingStep((prev) => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
-    }, 600);
+    }, loadingStepDelayMs);
 
     const loadTimeout = setTimeout(() => {
       setIsLoading(false);
-    }, 3000);
+    }, loadingHoldMs);
 
     return () => {
       clearInterval(stepInterval);
@@ -165,12 +185,26 @@ const DiscoverYourCrystals = () => {
   // Evaluate matching alignments for products
   const productsWithAlignment = useMemo(() => {
     return allProducts.map((p) => {
-      const matchesMulank = mulankInfo.stones.some((s) => 
-        p.name.toLowerCase().includes(s.toLowerCase()) || p.stone.toLowerCase().includes(s.toLowerCase())
-      );
-      const matchesDestiny = destinyInfo.stones.some((s) => 
-        p.name.toLowerCase().includes(s.toLowerCase()) || p.stone.toLowerCase().includes(s.toLowerCase())
-      );
+      const legacyAlignedNumbers = Array.isArray(p.alignedNumbers) ? p.alignedNumbers : [];
+      const rulingNumbers = Array.isArray(p.rulingNumbers) && p.rulingNumbers.length > 0
+        ? p.rulingNumbers
+        : legacyAlignedNumbers;
+      const destinyNumbers = Array.isArray(p.destinyNumbers) && p.destinyNumbers.length > 0
+        ? p.destinyNumbers
+        : legacyAlignedNumbers;
+      const hasCustomRulingAlignment = rulingNumbers.length > 0;
+      const hasCustomDestinyAlignment = destinyNumbers.length > 0;
+
+      const matchesMulank = hasCustomRulingAlignment
+        ? rulingNumbers.includes(mulank)
+        : mulankInfo.stones.some((s) => 
+            p.name.toLowerCase().includes(s.toLowerCase()) || p.stone?.toLowerCase().includes(s.toLowerCase())
+          );
+      const matchesDestiny = hasCustomDestinyAlignment
+        ? destinyNumbers.includes(destiny)
+        : destinyInfo.stones.some((s) => 
+            p.name.toLowerCase().includes(s.toLowerCase()) || p.stone?.toLowerCase().includes(s.toLowerCase())
+          );
 
       let alignmentTag = "";
       if (matchesMulank && matchesDestiny) {
@@ -189,7 +223,7 @@ const DiscoverYourCrystals = () => {
         tag: alignmentTag,
       };
     }).filter((p) => p.isAligned);
-  }, [allProducts, mulankInfo, destinyInfo]);
+  }, [allProducts, mulankInfo, destinyInfo, mulank, destiny]);
 
   // Remove duplicates and apply active tab filter
   const filteredProducts = useMemo(() => {
@@ -299,7 +333,7 @@ const DiscoverYourCrystals = () => {
 
             {dob && (
               <p className="text-xs sm:text-sm text-muted-foreground mb-12">
-                Derived for birthdate: <span className="text-white font-medium">{new Date(dob).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</span>
+                Derived for birthdate: <span className="text-white font-medium">{formatDobSafe(dob)}</span>
               </p>
             )}
 
@@ -501,10 +535,10 @@ const DiscoverYourCrystals = () => {
                 </h4>
                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
                   Represents your life path, your spiritual purpose, and the final destination of your journey. 
-                  Calculated from your **complete birth date** (Day + Month + Year). It guides your overall growth and destiny.
-                </p>
-              </div>
+                  Calculated from your **birth day and year digits**. It guides your overall growth and destiny.
+              </p>
             </div>
+          </div>
           </div>
         </div>
       </section>

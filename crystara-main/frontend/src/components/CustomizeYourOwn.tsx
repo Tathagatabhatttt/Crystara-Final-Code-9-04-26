@@ -1,26 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { CrystalButton } from "./CrystalButton";
+import { calculateDestinyNumber } from "@/lib/numerology";
 
 const CustomizeYourOwn = () => {
   const [birthDate, setBirthDate] = useState("");
   const navigate = useNavigate();
-
-  const calculateDestinyNumber = (dateStr: string): number => {
-    if (!dateStr) return 0;
-    const date = new Date(dateStr);
-    const day = date.getDate();
-    if (isNaN(day) || day < 1 || day > 31) return 0;
-    let sum = day;
-    while (sum > 9) {
-      sum = String(sum).split("").reduce((a, b) => a + parseInt(b), 0);
-    }
-    return sum;
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

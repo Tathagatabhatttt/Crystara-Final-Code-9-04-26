@@ -53,6 +53,9 @@ export type FlatProduct = ProductVariant & {
     isFromSanity?: boolean;
     stock?: number;
     videoUrl?: string;
+    alignedNumbers?: number[];
+    rulingNumbers?: number[];
+    destinyNumbers?: number[];
 };
 
 const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
@@ -116,6 +119,9 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 isDeleted: row.is_deleted || false,
                 stock: row.stock !== undefined && row.stock !== null ? Number(row.stock) : undefined,
                 videoUrl: row.video_url || "",
+                alignedNumbers: Array.isArray(row.aligned_numbers) ? row.aligned_numbers.map(Number) : [],
+                rulingNumbers: Array.isArray(row.ruling_numbers) ? row.ruling_numbers.map(Number) : [],
+                destinyNumbers: Array.isArray(row.destiny_numbers) ? row.destiny_numbers.map(Number) : [],
             })) as FlatProduct[];
         })
         .catch((err) => {

@@ -199,24 +199,17 @@ const PREDEFINED_CATEGORIES = [
     slug: "rings",
     subCategories: [
       { name: "Diamond Cut Oval Faced", slug: "diamond-cut-oval-faced" },
-      { name: "Round Gem Stone", slug: "round-gem-stone" },
       { name: "Heart Shaped", slug: "heart-shaped" },
-      { name: "Feather Touch", slug: "feather-touch" },
       { name: "Moon Shaped", slug: "moon-shaped" },
-      { name: "Boho", slug: "boho" }
     ]
   },
   {
     name: "Lockets / Pendants",
     slug: "lockets",
     subCategories: [
-      { name: "Silver Cap Pendant", slug: "silver-cap-pendant" },
-      { name: "Heart Shaped Pendant", slug: "heart-shaped-pendant" },
       { name: "Tortoise Shaped Pendant", slug: "tortoise-shaped-pendant" },
       { name: "Moon Owl Shaped Pendant", slug: "moon-owl-shaped-pendant" },
       { name: "Thread Wrapped Pendant", slug: "thread-wrapped-pendant" },
-      { name: "Silver Wire Wrapped Pendant", slug: "silver-wire-wrapped-pendant" },
-      { name: "Raw Stone Pendant", slug: "raw-stone-pendant" }
     ]
   },
   {
@@ -277,6 +270,8 @@ const AdminPanel = () => {
   const [prodOriginalPrice, setProdOriginalPrice] = useState("");
   const [prodBenefit, setProdBenefit] = useState("");
   const [prodFeatured, setProdFeatured] = useState(false);
+  const [prodRulingNumbers, setProdRulingNumbers] = useState<number[]>([]);
+  const [prodDestinyNumbers, setProdDestinyNumbers] = useState<number[]>([]);
   const [prodCategory, setProdCategory] = useState("");
   const [prodCategorySlug, setProdCategorySlug] = useState("");
   const [prodSubCategory, setProdSubCategory] = useState("");
@@ -722,6 +717,8 @@ const AdminPanel = () => {
     setProdVideoFile(null);
     setProdVideoPreview("");
     setProdVideoUrl("");
+    setProdRulingNumbers([]);
+    setProdDestinyNumbers([]);
     setIsProductModalOpen(true);
   };
 
@@ -734,6 +731,17 @@ const AdminPanel = () => {
     setProdOriginalPrice(product.originalPrice?.toString() || "");
     setProdBenefit(product.benefit || "");
     setProdFeatured(product.featured || false);
+    const legacyAlignedNumbers = Array.isArray(product.alignedNumbers) ? product.alignedNumbers : [];
+    setProdRulingNumbers(
+      Array.isArray(product.rulingNumbers) && product.rulingNumbers.length > 0
+        ? product.rulingNumbers
+        : legacyAlignedNumbers
+    );
+    setProdDestinyNumbers(
+      Array.isArray(product.destinyNumbers) && product.destinyNumbers.length > 0
+        ? product.destinyNumbers
+        : legacyAlignedNumbers
+    );
     setProdStock(product.stock !== undefined && product.stock !== null ? product.stock.toString() : "");
     setProdCategory(product.category || "");
     setProdCategorySlug(product.categorySlug || "");
@@ -996,6 +1004,9 @@ const AdminPanel = () => {
         sub_category_slug: prodSubCategorySlug || (prodSubCategory ? slugify(prodSubCategory) : null),
         gallery_images: finalGalleryImages,
         video_url: finalVideoUrl || null,
+        aligned_numbers: Array.from(new Set([...prodRulingNumbers, ...prodDestinyNumbers])),
+        ruling_numbers: prodRulingNumbers,
+        destiny_numbers: prodDestinyNumbers,
       };
 
       const { error: dbError } = await supabase
@@ -3603,6 +3614,73 @@ const AdminPanel = () => {
                     <label htmlFor="prodFeatured" className="text-sm font-medium text-foreground">
                       Feature on Homepage
                     </label>
+                  </div>
+                </div>
+
+                {/* Vedic Numerology Alignment */}
+                <div className="space-y-4 p-4 rounded-lg border border-border bg-card/40">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Sparkles className="w-4 h-4 text-accent animate-pulse" />
+                      Vedic Numerology Alignment
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">
+                      Choose which numbers should show this product under Ruling and Destiny recommendations. If both are left empty, the app falls back to stone-based matching.
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ruling Number</p>
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                          <div key={`ruling-${num}`} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              id={`rulingNum-${num}`}
+                              checked={prodRulingNumbers.includes(num)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setProdRulingNumbers([...prodRulingNumbers, num]);
+                                } else {
+                                  setProdRulingNumbers(prodRulingNumbers.filter((n) => n !== num));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <label htmlFor={`rulingNum-${num}`} className="text-sm font-medium text-foreground cursor-pointer select-none">
+                              Number {num}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destiny Number</p>
+                      <div className="flex flex-wrap gap-x-5 gap-y-2">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                          <div key={`destiny-${num}`} className="flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              id={`destinyNum-${num}`}
+                              checked={prodDestinyNumbers.includes(num)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setProdDestinyNumbers([...prodDestinyNumbers, num]);
+                                } else {
+                                  setProdDestinyNumbers(prodDestinyNumbers.filter((n) => n !== num));
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                            />
+                            <label htmlFor={`destinyNum-${num}`} className="text-sm font-medium text-foreground cursor-pointer select-none">
+                              Number {num}
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
