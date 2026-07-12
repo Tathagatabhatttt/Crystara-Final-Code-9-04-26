@@ -1009,9 +1009,31 @@ const AdminPanel = () => {
         destiny_numbers: prodDestinyNumbers,
       };
 
-      const { error: dbError } = await supabase
-        .from("products")
-        .upsert(productRecord);
+      const legacyProductRecord = { ...productRecord } as typeof productRecord & {
+        ruling_numbers?: number[];
+        destiny_numbers?: number[];
+      };
+      delete legacyProductRecord.ruling_numbers;
+      delete legacyProductRecord.destiny_numbers;
+
+      const upsertWithFallback = async () => {
+        const { error } = await supabase.from("products").upsert(productRecord);
+        if (!error) return null;
+
+        const message = error.message?.toLowerCase() || "";
+        const isSchemaMismatch =
+          message.includes("destiny_numbers") ||
+          message.includes("ruling_numbers") ||
+          message.includes("schema cache");
+
+        if (!isSchemaMismatch) return error;
+
+        console.warn("Retrying product upsert without numerology override columns:", error);
+        const { error: legacyError } = await supabase.from("products").upsert(legacyProductRecord);
+        return legacyError || null;
+      };
+
+      const dbError = await upsertWithFallback();
 
       if (dbError) throw dbError;
 
