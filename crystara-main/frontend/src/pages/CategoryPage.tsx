@@ -219,7 +219,7 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "0px 0px -50px 0px" }}
       transition={{ duration: 0.35, ease: "easeOut", delay: Math.min(index * 0.03, 0.15) }}
-      className="group bg-card/45 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden border border-border/20 hover:border-primary/30 hover:shadow-glow hover:-translate-y-0.5 transition-all duration-300 flex flex-col h-full"
+      className="group bg-card/45 hover:bg-card/75 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full"
     >
       {/* Image container */}
       <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-secondary/5">
@@ -232,7 +232,7 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
 
         {/* Premium Discount Badge */}
         {discount > 0 && (
-          <div className="absolute top-2 left-2 bg-rose-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md backdrop-blur-sm">
+          <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md backdrop-blur-sm animate-pulse">
             {discount}% OFF
           </div>
         )}
@@ -248,7 +248,7 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
 
           {/* Title */}
           <Link to={`/product/${product.id}`} className="block">
-            <h3 className="font-serif font-semibold text-foreground text-sm sm:text-base line-clamp-2 hover:text-primary transition-colors leading-snug min-h-[2.5rem]">
+            <h3 className="font-serif font-semibold text-foreground text-sm sm:text-base line-clamp-2 hover:text-emerald-400 transition-colors leading-snug min-h-[2.5rem]">
               {product.name}
             </h3>
           </Link>
@@ -257,7 +257,7 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
           <div className="flex items-center gap-1 text-amber-500">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
-                <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
+                <svg key={i} className="w-3 h-3 fill-current animate-pulse" viewBox="0 0 20 20" style={{ animationDelay: `${i * 150}ms`, animationDuration: '3s' }}>
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                 </svg>
               ))}
@@ -278,7 +278,7 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
           <Button
             size="sm"
             onClick={handleAddToCart}
-            className="bg-zinc-950 hover:bg-zinc-900 text-white border border-white/10 hover:border-primary/20 rounded-full h-8 px-3.5 text-xs font-semibold flex items-center gap-1 shadow-md transition-all active:scale-95"
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-full h-8 px-4 text-xs font-semibold flex items-center gap-1 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95 border-none"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             Add

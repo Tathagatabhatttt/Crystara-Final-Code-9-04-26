@@ -38,7 +38,21 @@ export function useCatalogProducts() {
 
 export function useCatalogStructure() {
   const query = useProductCatalog();
-  const data = query.data?.length ? query.data : staticCatalog;
+  const data = useMemo(() => {
+    const cmsCategories = query.data || [];
+    const merged = [...staticCatalog];
+    
+    cmsCategories.forEach((cc) => {
+      const idx = merged.findIndex((m) => m.slug === cc.slug || m.id === cc.id);
+      if (idx !== -1) {
+        merged[idx] = { ...merged[idx], ...cc };
+      } else {
+        merged.push(cc);
+      }
+    });
+    return merged;
+  }, [query.data]);
+
   return { ...query, data };
 }
 

@@ -4,10 +4,11 @@ import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import CategorySection from "@/components/CategorySection";
 import FeaturedProducts from "@/components/FeaturedProducts";
+import AllCategories from "@/components/AllCategories";
 import BenefitsSection from "@/components/BenefitsSection";
 import TestimonialSection from "@/components/TestimonialSection";
 import Footer from "@/components/Footer";
-
+ 
 const HappyCustomersBanner = () => (
   <section className="py-6 sm:py-10">
     <div className="container mx-auto px-4 sm:px-6">
@@ -32,7 +33,7 @@ const HappyCustomersBanner = () => (
     </div>
   </section>
 );
-
+ 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
@@ -41,6 +42,7 @@ const Index = () => {
         <HeroSection />
         <CategorySection />
         <FeaturedProducts />
+        <AllCategories />
         <HappyCustomersBanner />
         <BenefitsSection />
         <TestimonialSection />
