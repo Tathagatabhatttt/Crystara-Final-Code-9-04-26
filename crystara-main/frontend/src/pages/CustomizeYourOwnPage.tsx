@@ -268,7 +268,7 @@ const CustomizeYourOwnPage = () => {
         <div className="relative z-10 flex min-h-screen flex-col">
           <Header />
 
-          <main className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-20 sm:pt-28 pb-12">
+          <main className="flex-1 flex items-center justify-center px-4 sm:px-6 pt-32 sm:pt-40 pb-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
