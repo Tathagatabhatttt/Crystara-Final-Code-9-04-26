@@ -42,7 +42,8 @@ export const calculateDestinyNumber = (dateStr: string): number => {
   if (!parsed) return 0;
 
   const dayRoot = reduceToSingleDigit(parsed.day);
+  const monthRoot = reduceToSingleDigit(parsed.month);
   const yearRoot = reduceToSingleDigit(parsed.year);
 
-  return reduceToSingleDigit(dayRoot + yearRoot);
+  return reduceToSingleDigit(dayRoot + monthRoot + yearRoot);
 };
