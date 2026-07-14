@@ -287,6 +287,7 @@ const AdminPanel = () => {
   const [prodVideoFile, setProdVideoFile] = useState<File | null>(null);
   const [prodVideoPreview, setProdVideoPreview] = useState("");
   const [prodVideoUrl, setProdVideoUrl] = useState("");
+  const [prodIsAdminCustomized, setProdIsAdminCustomized] = useState(false);
 
   // Order Address Editing States
   const [isEditingAddress, setIsEditingAddress] = useState(false);
@@ -719,6 +720,7 @@ const AdminPanel = () => {
     setProdVideoUrl("");
     setProdRulingNumbers([]);
     setProdDestinyNumbers([]);
+    setProdIsAdminCustomized(false);
     setIsProductModalOpen(true);
   };
 
@@ -756,6 +758,7 @@ const AdminPanel = () => {
     setProdVideoFile(null);
     setProdVideoPreview("");
     setProdVideoUrl(product.videoUrl || "");
+    setProdIsAdminCustomized(product.isAdminCustomized || false);
     setIsProductModalOpen(true);
   };
 
@@ -1007,14 +1010,17 @@ const AdminPanel = () => {
         aligned_numbers: Array.from(new Set([...prodRulingNumbers, ...prodDestinyNumbers])),
         ruling_numbers: prodRulingNumbers,
         destiny_numbers: prodDestinyNumbers,
+        is_admin_customized: prodIsAdminCustomized,
       };
 
       const legacyProductRecord = { ...productRecord } as typeof productRecord & {
         ruling_numbers?: number[];
         destiny_numbers?: number[];
+        is_admin_customized?: boolean;
       };
       delete legacyProductRecord.ruling_numbers;
       delete legacyProductRecord.destiny_numbers;
+      delete legacyProductRecord.is_admin_customized;
 
       const upsertWithFallback = async () => {
         const { error } = await supabase.from("products").upsert(productRecord);
@@ -2146,6 +2152,11 @@ const AdminPanel = () => {
                                   {isFeatured && (
                                     <Badge variant="outline" className="text-[10px] py-0 px-1 bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                                       Featured
+                                    </Badge>
+                                  )}
+                                  {product.isAdminCustomized && (
+                                    <Badge variant="outline" className="text-[10px] py-0 px-1 bg-purple-500/10 text-purple-600 border-purple-500/20">
+                                      Admin Customized
                                     </Badge>
                                   )}
                                   {product.isDeleted && (
@@ -3631,10 +3642,24 @@ const AdminPanel = () => {
                       id="prodFeatured"
                       checked={prodFeatured}
                       onChange={(e) => setProdFeatured(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                     />
-                    <label htmlFor="prodFeatured" className="text-sm font-medium text-foreground">
+                    <label htmlFor="prodFeatured" className="text-sm font-medium text-foreground cursor-pointer select-none">
                       Feature on Homepage
+                    </label>
+                  </div>
+
+                  {/* Admin Customized */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="prodIsAdminCustomized"
+                      checked={prodIsAdminCustomized}
+                      onChange={(e) => setProdIsAdminCustomized(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    />
+                    <label htmlFor="prodIsAdminCustomized" className="text-sm font-medium text-foreground cursor-pointer select-none">
+                      Admin Customized (Show in Customize Section)
                     </label>
                   </div>
                 </div>

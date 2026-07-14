@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { CrystalButton } from "./CrystalButton";
-import { calculateDestinyNumber } from "@/lib/numerology";
+import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
 
 const CustomizeYourOwn = () => {
   const [birthDate, setBirthDate] = useState("");
@@ -13,8 +13,9 @@ const CustomizeYourOwn = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const destiny = calculateDestinyNumber(birthDate);
+    const ruling = calculateMulank(birthDate);
     if (destiny > 0) {
-      navigate(`/customize-your-own?destiny=${destiny}`);
+      navigate(`/customize-your-own?destiny=${destiny}&mulank=${ruling}&dob=${birthDate}`);
     }
   };
 

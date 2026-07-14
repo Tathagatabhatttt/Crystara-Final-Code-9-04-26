@@ -118,7 +118,7 @@ const getPricing = (categorySlug: string, subCategorySlug: string) => {
 const chipBraceletStones = ["Money Magnet", "Green Aventurine", "Turquoise", "Lapis", "Amethyst", "Citrine Natural", "Clear Quartz", "Rose Quartz", "Sun Stone", "Green Jade", "Black Tourmaline", "Pyrite", "Opal", "Hematite"];
 const beadsBraceletStones = ["Tiger Eye", "Money Magnet", "Green Aventurine", "Lapis", "Amethyst", "Citrine", "Citrine Natural", "Rose Quartz", "Sun Stone", "Green Jade", "Pyrite", "Hematite", "7 Chakra", "Golden Pyrite", "Sunstone", "OM Money Multi Crystal", "OM Money Black", "Opalite"];
 const ringStones = ["Tiger Eye", "Lapis", "Amethyst", "Citrine", "Rose Quartz", "Green Jade", "Pyrite", "Rainbow Moon Stone", "Turquoise"];
-const ringStyles = ["Diamond Cut Oval Faced", "Heart Shaped", "Moon Shaped"];
+const ringStyles = ["Combo 1", "Combo 2", "Combo 3"];
 const silverCapStones = ["Tiger Eye", "Lapis", "Amethyst", "Black Tourmaline", "Clear Quartz", "Larvikite", "Sodalite", "Rose Quartz", "Dalmatian"];
 const heartPendantStones = ["Tiger Eye", "Lapis", "Amethyst", "Blue Gold Stone", "Clear Quartz", "Rose Quartz", "Sunstone", "Green Jade"];
 const tortoisePendantStones = ["Tiger Eye", "Lapis", "Amethyst", "Black Tourmaline", "Clear Quartz", "Opalite", "Green Aventurine", "Rose Quartz"];

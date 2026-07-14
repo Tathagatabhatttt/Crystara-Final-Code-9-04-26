@@ -148,7 +148,7 @@ const Header = () => {
                                         View All {category.name} →
                                       </Link>
                                     </li>
-                                    {category.subCategories.map((sub) => (
+                                    {category.subCategories.map((sub, idx) => (
                                       <li key={sub.id}>
                                         <Link
                                           to={`/category/${category.slug}/${sub.slug}`}
@@ -158,7 +158,7 @@ const Header = () => {
                                             setActiveCategory(null);
                                           }}
                                         >
-                                          {sub.name}
+                                          Combo {idx + 1}
                                         </Link>
                                       </li>
                                     ))}
@@ -315,14 +315,14 @@ const Header = () => {
                                 >
                                   View All {category.name} →
                                 </Link>
-                                {category.subCategories.map((sub) => (
+                                {category.subCategories.map((sub, idx) => (
                                   <Link
                                     key={sub.id}
                                     to={`/category/${category.slug}/${sub.slug}`}
                                     className="text-xs text-muted-foreground hover:text-foreground transition-colors py-0.5"
                                     onClick={() => { setIsMenuOpen(false); setIsMobileCategoriesOpen(false); setActiveMobileCategory(null); }}
                                   >
-                                    {sub.name}
+                                    Combo {idx + 1}
                                   </Link>
                                 ))}
                               </motion.div>

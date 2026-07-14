@@ -56,6 +56,7 @@ export type FlatProduct = ProductVariant & {
     alignedNumbers?: number[];
     rulingNumbers?: number[];
     destinyNumbers?: number[];
+    isAdminCustomized?: boolean;
 };
 
 const timeoutPromise = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
@@ -122,6 +123,7 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 alignedNumbers: Array.isArray(row.aligned_numbers) ? row.aligned_numbers.map(Number) : [],
                 rulingNumbers: Array.isArray(row.ruling_numbers) ? row.ruling_numbers.map(Number) : [],
                 destinyNumbers: Array.isArray(row.destiny_numbers) ? row.destiny_numbers.map(Number) : [],
+                isAdminCustomized: row.is_admin_customized || false,
             })) as FlatProduct[];
         })
         .catch((err) => {

@@ -23,18 +23,23 @@ const CategoryPage = () => {
   );
 
   const category = productCatalog.find((c) => c.slug === categorySlug);
+  const subCategoryIndex = category
+    ? category.subCategories.findIndex((s) => s.slug === subCategorySlug)
+    : -1;
   const subCategory = category?.subCategories.find((s) => s.slug === subCategorySlug);
+  const subCategoryDisplayName = subCategoryIndex !== -1 ? `Combo ${subCategoryIndex + 1}` : undefined;
 
   const products = subCategorySlug && categorySlug
     ? subCategoryProducts
     : categoryProducts;
 
-  const title = subCategory?.name || category?.name || "Products";
-  const description = subCategory
-    ? `Explore our collection of ${subCategory.name} crystals`
+  const title = subCategoryDisplayName || category?.name || "Products";
+  const description = subCategoryDisplayName
+    ? `Explore our collection of ${subCategory?.name || ""} crystals`
     : category
     ? `Discover all ${category.name} in our collection`
     : "Browse our crystal collection";
+  const shouldNumberProducts = false;
 
   if (!category) {
     return (
@@ -83,7 +88,7 @@ const CategoryPage = () => {
                   {category.name}
                 </Link>
                 <span>/</span>
-                <span className="text-foreground">{subCategory.name}</span>
+                <span className="text-foreground">{subCategoryDisplayName}</span>
               </>
             ) : (
               <span className="text-foreground">{category.name}</span>
@@ -97,24 +102,35 @@ const CategoryPage = () => {
             {description}
           </p>
 
-          {/* Sub-category filters (if showing main category) */}
-          {!subCategorySlug && category.subCategories.length > 0 && (
+          {/* Sub-category filters */}
+          {category.subCategories.length > 0 && (
             <div className="flex flex-wrap justify-center gap-3 mb-12">
               <Link
                 to={`/category/${categorySlug}`}
-                className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm font-medium transition-colors"
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  !subCategorySlug
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80 text-foreground"
+                }`}
               >
                 All {category.name}
               </Link>
-              {category.subCategories.map((sub) => (
-                <Link
-                  key={sub.id}
-                  to={`/category/${categorySlug}/${sub.slug}`}
-                  className="px-4 py-2 rounded-full bg-muted hover:bg-muted/80 text-sm font-medium transition-colors"
-                >
-                  {sub.name}
-                </Link>
-              ))}
+              {category.subCategories.map((sub, idx) => {
+                const isActive = subCategorySlug === sub.slug;
+                return (
+                  <Link
+                    key={sub.id}
+                    to={`/category/${categorySlug}/${sub.slug}`}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted hover:bg-muted/80 text-foreground"
+                    }`}
+                  >
+                    Combo {idx + 1}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
@@ -125,7 +141,7 @@ const CategoryPage = () => {
                 key={product.id}
                 product={{
                   id: product.id,
-                  name: `${product.name} ${product.subCategory}`,
+                  name: shouldNumberProducts ? `Combo ${index + 1}` : `${product.name} ${product.subCategory}`,
                   price: product.price,
                   originalPrice: product.originalPrice,
                   image: product.image,
