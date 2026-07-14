@@ -3026,10 +3026,10 @@ const AdminPanel = () => {
                 <CardHeader className="bg-secondary/10 pb-4 border-b border-border/40">
                   <CardTitle className="font-serif text-xl sm:text-2xl flex items-center gap-2">
                     <Package className="w-5 h-5 text-primary" />
-                    Best Selling Combos (Homepage Categories)
+                    Best Selling Combos (Homepage Featured)
                   </CardTitle>
                   <CardDescription>
-                    Configure the 4 large category banners showing in the "Best Selling Combos" section on the Home page.
+                    Configure the 4 featured combo slots showing in the "Best Selling Combos" section on the Home page. Select a product, customize its display name, price, or image, and click Save below.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-6 space-y-6">
@@ -3038,19 +3038,19 @@ const AdminPanel = () => {
                       <div key={idx} className="border border-border/60 rounded-xl p-4 bg-secondary/5 space-y-4 hover:border-primary/40 transition-colors duration-300">
                         <div className="flex items-center justify-between border-b border-border/40 pb-2">
                           <h3 className="font-serif font-bold text-base text-primary">Slot {idx + 1}: {cat.name || "(Unnamed)"}</h3>
-                          <span className="text-xs text-muted-foreground uppercase font-semibold">Homepage category {idx + 1}</span>
+                          <span className="text-xs text-muted-foreground uppercase font-semibold">Slot {idx + 1}</span>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           {/* Image preview & upload slot */}
                           <div className="space-y-2">
-                            <label className="text-xs font-semibold text-muted-foreground block">Banner Image</label>
+                            <label className="text-xs font-semibold text-muted-foreground block">Display Image</label>
                             <div className="relative aspect-square w-full bg-secondary/20 rounded-lg overflow-hidden border border-border">
                               {cat.image ? (
                                 <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground text-center p-2">
-                                  No image
+                                  No image (Using product's default)
                                 </div>
                               )}
                               {uploadingCategoryIndex === idx && (
@@ -3083,27 +3083,43 @@ const AdminPanel = () => {
                           {/* Detail inputs */}
                           <div className="sm:col-span-2 space-y-3">
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground block">Name</label>
+                              <label className="text-xs font-semibold text-muted-foreground block">Linked Product</label>
+                              <select
+                                value={cat.link?.replace("/product/", "") || ""}
+                                onChange={(e) => handleUpdateCategoryField(idx, "link", e.target.value ? `/product/${e.target.value}` : "")}
+                                className="w-full h-9 px-3 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                              >
+                                <option value="">-- Select Product --</option>
+                                {(allMergedProducts || []).map((p: any) => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.name} (₹{p.price})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-xs font-semibold text-muted-foreground block">Custom Display Name (Optional)</label>
                               <Input
                                 type="text"
                                 value={cat.name}
-                                placeholder="Category Name"
+                                placeholder="Leave blank to use default name"
                                 onChange={(e) => handleUpdateCategoryField(idx, "name", e.target.value)}
                               />
                             </div>
                             
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground block">Description</label>
+                              <label className="text-xs font-semibold text-muted-foreground block">Custom Display Price (₹) (Optional)</label>
                               <Input
                                 type="text"
                                 value={cat.description}
-                                placeholder="Short description..."
+                                placeholder="e.g. 2499 (Leave blank to use default price)"
                                 onChange={(e) => handleUpdateCategoryField(idx, "description", e.target.value)}
                               />
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground block">Image URL</label>
+                              <label className="text-xs font-semibold text-muted-foreground block">Custom Display Image URL (Optional)</label>
                               <Input
                                 type="text"
                                 value={cat.image}
@@ -3113,12 +3129,13 @@ const AdminPanel = () => {
                             </div>
 
                             <div className="space-y-1">
-                              <label className="text-xs font-semibold text-muted-foreground block">Link / Action URL</label>
+                              <label className="text-xs font-semibold text-muted-foreground block">Linked Product URL</label>
                               <Input
                                 type="text"
                                 value={cat.link}
-                                placeholder="e.g. /category/bracelets/chip-bracelet"
-                                onChange={(e) => handleUpdateCategoryField(idx, "link", e.target.value)}
+                                readOnly
+                                className="bg-secondary/20 cursor-not-allowed"
+                                placeholder="/product/product-id"
                               />
                             </div>
                           </div>

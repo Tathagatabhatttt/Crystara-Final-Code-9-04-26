@@ -1,5 +1,19 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import categoryChipBracelet from "@/assets/category-chip-bracelet.jpg";
+import categoryBeadsBracelet from "@/assets/category-beads-bracelet.jpg";
+import categoryRing from "@/assets/category-ring.jpg";
+import categoryLocket from "@/assets/category-locket.jpg";
+
+export const resolveLocalAsset = (url: string): string => {
+  if (!url) return "";
+  const lowercase = url.toLowerCase();
+  if (lowercase.includes("category-chip-bracelet")) return categoryChipBracelet;
+  if (lowercase.includes("category-beads-bracelet")) return categoryBeadsBracelet;
+  if (lowercase.includes("category-ring")) return categoryRing;
+  if (lowercase.includes("category-locket")) return categoryLocket;
+  return url;
+};
 import { sanityClient } from "@/lib/sanity";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -155,15 +169,19 @@ export function useHomepageCategories(): HomepageCategory[] {
 
   return useMemo(() => {
     const fromCms = (data?.homepageCategories ?? [])
-      .filter((item) => item.name && item.image && item.link)
       .map((item) => ({
-        name: item.name,
+        name: item.name || "",
         description: item.description || "",
-        image: item.image!,
-        href: item.link!,
+        image: resolveLocalAsset(item.image || ""),
+        href: item.link || "",
       }));
 
-    return fromCms.length > 0 ? fromCms : DEFAULT_HOMEPAGE_CATEGORIES;
+    return fromCms.length > 0 ? fromCms : DEFAULT_HOMEPAGE_CATEGORIES.map(c => ({
+      name: c.name,
+      description: c.description || "",
+      image: typeof c.image === "string" ? c.image : "",
+      href: c.href || c.link || ""
+    }));
   }, [data?.homepageCategories]);
 }
 
