@@ -1,12 +1,13 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Heart, ArrowRight, ShoppingBag, X } from "lucide-react";
+import { Heart, ArrowRight, ShoppingBag, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRef, useState } from "react";
 
 const Wishlist = () => {
   const { items, removeFromWishlist } = useWishlist();
@@ -67,28 +68,12 @@ const Wishlist = () => {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-6">
               {items.map((item) => (
-                <motion.div key={item.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card rounded-xl overflow-hidden border border-border group relative">
-                  <Button variant="ghost" size="icon" className="absolute top-2 right-2 z-10 w-7 h-7 bg-background/80 rounded-full" onClick={() => removeFromWishlist(item.id)}>
-                    <X size={14} />
-                  </Button>
-                  <Link to={`/product/${item.id}`} className="block aspect-square overflow-hidden">
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                  </Link>
-                  <div className="p-3">
-                    <p className="text-[10px] text-muted-foreground uppercase">{item.category}</p>
-                    <Link to={`/product/${item.id}`}>
-                      <h3 className="font-serif font-semibold text-sm line-clamp-2 hover:text-primary">{item.name}</h3>
-                    </Link>
-                    <div className="flex items-center gap-2 my-1.5">
-                      <span className="text-sm font-bold text-primary">₹{item.price.toLocaleString()}</span>
-                      {item.originalPrice && <span className="text-[10px] text-muted-foreground line-through">₹{item.originalPrice.toLocaleString()}</span>}
-                    </div>
-                    <Button size="sm" className="w-full text-xs h-8" onClick={() => handleMoveToCart(item)}>
-                      <ShoppingBag size={14} className="mr-1.5" /> Move to Cart
-                    </Button>
-                  </div>
-                </motion.div>
+                <WishlistItemCard
+                  key={item.id}
+                  item={item}
+                  onRemove={removeFromWishlist}
+                  onMoveToCart={handleMoveToCart}
+                />
               ))}
             </div>
           )}
@@ -96,6 +81,124 @@ const Wishlist = () => {
       </main>
       <Footer />
     </div>
+  );
+};
+
+type WishlistItem = ReturnType<typeof useWishlist>["items"][number];
+
+const WishlistItemCard = ({
+  item,
+  onRemove,
+  onMoveToCart,
+}: {
+  item: WishlistItem;
+  onRemove: (id: string) => void;
+  onMoveToCart: (item: WishlistItem) => void;
+}) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  // Wishlist items carry only one image currently; structure is ready for multiple
+  const images = [item.image].filter(Boolean) as string[];
+
+  const slideTo = (idx: number) => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({ left: idx * scrollRef.current.clientWidth, behavior: "smooth" });
+    setCurrentIdx(idx);
+  };
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    const { scrollLeft, clientWidth } = scrollRef.current;
+    if (clientWidth > 0) setCurrentIdx(Math.round(scrollLeft / clientWidth));
+  };
+
+  const discount = item.originalPrice ? Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100) : 0;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-card rounded-xl overflow-hidden border border-border group relative flex flex-col"
+    >
+      {/* Remove button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-2 right-2 z-20 w-7 h-7 bg-background/80 rounded-full"
+        onClick={() => onRemove(item.id)}
+      >
+        <X size={14} />
+      </Button>
+
+      {/* Scroll gallery */}
+      <div className="relative aspect-square overflow-hidden bg-secondary/5 group/slider">
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth"
+        >
+          {images.map((img, idx) => (
+            <Link key={idx} to={`/product/${item.id}`} className="w-full h-full flex-shrink-0 snap-start block">
+              <img src={img} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+            </Link>
+          ))}
+        </div>
+
+        {/* Discount badge */}
+        {discount > 0 && (
+          <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md backdrop-blur-sm pointer-events-none z-10">
+            {discount}% OFF
+          </div>
+        )}
+
+        {/* Chevrons */}
+        {images.length > 1 && (
+          <>
+            {currentIdx > 0 && (
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(currentIdx - 1); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center shadow-md opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200 z-10">
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            {currentIdx < images.length - 1 && (
+              <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(currentIdx + 1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center shadow-md opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200 z-10">
+                <ChevronRight size={16} />
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Dots */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-10">
+            {images.map((_, idx) => (
+              <button key={idx} onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(idx); }}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${idx === currentIdx ? "bg-emerald-500 scale-125" : "bg-white/60 hover:bg-white"}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="p-3 flex flex-col flex-1 justify-between">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase">{item.category}</p>
+          <Link to={`/product/${item.id}`}>
+            <h3 className="font-serif font-semibold text-sm line-clamp-2 hover:text-primary">{item.name}</h3>
+          </Link>
+          <div className="flex flex-col items-start sm:flex-row sm:items-center gap-0.5 sm:gap-2 my-1.5">
+            <span className="text-sm font-bold text-primary leading-none">₹{item.price.toLocaleString()}</span>
+            {item.originalPrice && <span className="text-[10px] text-muted-foreground line-through leading-none">₹{item.originalPrice.toLocaleString()}</span>}
+          </div>
+        </div>
+        <Button size="sm" className="w-full text-xs h-8 mt-2" onClick={() => onMoveToCart(item)}>
+          <ShoppingBag size={14} className="mr-1.5" /> Move to Cart
+        </Button>
+      </div>
+    </motion.div>
   );
 };
 

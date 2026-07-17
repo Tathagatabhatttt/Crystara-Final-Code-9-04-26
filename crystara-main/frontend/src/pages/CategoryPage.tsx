@@ -4,9 +4,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/contexts/CartContext";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { useRef, useState } from "react";
 import {
   useCatalogStructure,
   useCatalogProductsByCategory,
@@ -164,6 +165,7 @@ const CategoryPage = () => {
                     image: product.image,
                     category: product.category,
                     benefit: product.benefit,
+                    galleryImages: product.galleryImages,
                   }}
                   index={index}
                   linkTo={`/product/${product.id}`}
@@ -186,7 +188,36 @@ const CategoryPage = () => {
 
 const ComboProductCard = ({ product, index }: { product: any; index: number }) => {
   const { addToCart } = useCart();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+
   const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+
+  const images = Array.from(new Set([product.image, ...(product.galleryImages || [])].filter(Boolean))) as string[];
+
+  const getReviewCount = (productId: string) => {
+    let hash = 0;
+    for (let i = 0; i < productId.length; i++) {
+      hash = productId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash % 200) + 45;
+  };
+  const reviews = getReviewCount(String(product.id));
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollLeft, clientWidth } = scrollContainerRef.current;
+    if (clientWidth > 0) {
+      const newIndex = Math.round(scrollLeft / clientWidth);
+      if (newIndex !== currentImgIndex) setCurrentImgIndex(newIndex);
+    }
+  };
+
+  const slideTo = (idx: number) => {
+    if (!scrollContainerRef.current) return;
+    scrollContainerRef.current.scrollTo({ left: idx * scrollContainerRef.current.clientWidth, behavior: "smooth" });
+    setCurrentImgIndex(idx);
+  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -203,16 +234,6 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
     toast.success("Added combo to cart!");
   };
 
-  const getReviewCount = (productId: string) => {
-    let hash = 0;
-    for (let i = 0; i < productId.length; i++) {
-      hash = productId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return Math.abs(hash % 200) + 45;
-  };
-
-  const reviews = getReviewCount(String(product.id));
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -221,39 +242,85 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
       transition={{ duration: 0.35, ease: "easeOut", delay: Math.min(index * 0.03, 0.15) }}
       className="group bg-card/45 hover:bg-card/75 backdrop-blur-sm rounded-xl sm:rounded-2xl overflow-hidden border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] hover:border-emerald-400 hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] hover:-translate-y-1.5 transition-all duration-300 flex flex-col h-full"
     >
-      {/* Image container */}
-      <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-secondary/5">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-103"
-          loading="lazy"
-        />
+      {/* Scrollable image slider */}
+      <div className="relative aspect-square overflow-hidden bg-secondary/5 group/slider">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scrollbar-hide scroll-smooth"
+        >
+          {images.map((img, idx) => (
+            <Link
+              key={idx}
+              to={`/product/${product.id}`}
+              className="w-full h-full flex-shrink-0 snap-start block"
+            >
+              <img
+                src={img}
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-103"
+                loading="lazy"
+              />
+            </Link>
+          ))}
+        </div>
 
-        {/* Premium Discount Badge */}
+        {/* Discount badge */}
         {discount > 0 && (
-          <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md backdrop-blur-sm animate-pulse">
+          <div className="absolute top-2 left-2 bg-emerald-500/90 text-white text-[9px] sm:text-xs font-bold px-2 py-0.5 rounded-full shadow-md backdrop-blur-sm pointer-events-none z-10">
             {discount}% OFF
           </div>
         )}
-      </Link>
+
+        {/* Chevron arrows */}
+        {images.length > 1 && (
+          <>
+            {currentImgIndex > 0 && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(currentImgIndex - 1); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center shadow-md opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200 z-10"
+              >
+                <ChevronLeft size={16} className="text-foreground" />
+              </button>
+            )}
+            {currentImgIndex < images.length - 1 && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(currentImgIndex + 1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-background/80 hover:bg-background flex items-center justify-center shadow-md opacity-0 group-hover/slider:opacity-100 transition-opacity duration-200 z-10"
+              >
+                <ChevronRight size={16} className="text-foreground" />
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Dot indicators */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5 z-10">
+            {images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); slideTo(idx); }}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${
+                  idx === currentImgIndex ? "bg-emerald-500 scale-125" : "bg-white/60 hover:bg-white"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Info Block */}
       <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3">
         <div className="space-y-1.5">
-          {/* Category */}
           <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">
             {product.category || "Combo Offers"}
           </p>
-
-          {/* Title */}
           <Link to={`/product/${product.id}`} className="block">
             <h3 className="font-serif font-semibold text-foreground text-sm sm:text-base line-clamp-2 hover:text-emerald-400 transition-colors leading-snug min-h-[2.5rem]">
               {product.name}
             </h3>
           </Link>
-
-          {/* Rating */}
           <div className="flex items-center gap-1 text-amber-500">
             <div className="flex">
               {[...Array(5)].map((_, i) => (
@@ -267,18 +334,17 @@ const ComboProductCard = ({ product, index }: { product: any; index: number }) =
         </div>
 
         {/* Pricing & Add Button */}
-        <div className="flex items-center justify-between border-t border-border/10 pt-2.5">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-base sm:text-lg font-serif font-bold text-primary">₹{product.price.toLocaleString()}</span>
+        <div className="flex items-center justify-between border-t border-border/10 pt-2.5 gap-2">
+          <div className="flex flex-col items-start sm:flex-row sm:items-baseline gap-0.5 sm:gap-1.5 min-w-0">
+            <span className="text-sm sm:text-base md:text-lg font-serif font-bold text-primary leading-none">₹{product.price.toLocaleString()}</span>
             {product.originalPrice && (
-              <span className="text-xs text-muted-foreground/60 line-through">₹{product.originalPrice.toLocaleString()}</span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground/60 line-through leading-none">₹{product.originalPrice.toLocaleString()}</span>
             )}
           </div>
-          
           <Button
             size="sm"
             onClick={handleAddToCart}
-            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-full h-8 px-4 text-xs font-semibold flex items-center gap-1 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95 border-none"
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-full h-7 sm:h-8 px-2.5 sm:px-4 text-[10px] sm:text-xs font-semibold flex items-center gap-1 shadow-[0_4px_15px_rgba(16,185,129,0.3)] hover:shadow-[0_6px_20px_rgba(16,185,129,0.4)] transition-all hover:scale-105 active:scale-95 border-none shrink-0"
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             Add

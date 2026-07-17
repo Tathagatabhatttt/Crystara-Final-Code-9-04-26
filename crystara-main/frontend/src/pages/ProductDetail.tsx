@@ -377,7 +377,7 @@ const ProductDetail = () => {
               <h2 className="text-xl md:text-3xl font-serif font-bold mb-6 md:mb-8">You May Also Like</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
                 {relatedProducts.map((rp, index) => (
-                  <ProductCard key={rp.id} product={{ id: rp.id, name: `${rp.name} ${rp.subCategory}`, price: rp.price, originalPrice: rp.originalPrice, image: rp.image, category: rp.category, benefit: rp.benefit }} index={index} linkTo={`/product/${rp.id}`} />
+                  <ProductCard key={rp.id} product={{ id: rp.id, name: `${rp.name} ${rp.subCategory}`, price: rp.price, originalPrice: rp.originalPrice, image: rp.image, category: rp.category, benefit: rp.benefit, galleryImages: rp.galleryImages }} index={index} linkTo={`/product/${rp.id}`} />
                 ))}
               </div>
             </motion.section>

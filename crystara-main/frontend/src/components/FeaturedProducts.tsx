@@ -46,6 +46,7 @@ const FeaturedProducts = () => {
                   image: product.image,
                   category: product.category,
                   benefit: product.benefit,
+                  galleryImages: product.galleryImages,
                 }}
                 index={index}
                 linkTo={`/product/${product.id}`}
