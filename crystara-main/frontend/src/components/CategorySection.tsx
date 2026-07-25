@@ -188,10 +188,10 @@ const CategoryProductCard = ({ slot, product, index, isProductLink, addToCart }:
       </div>
 
       {/* Info Block */}
-      <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3">
+      <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3 border-t border-emerald-500/10 bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/70 dark:from-emerald-950/35 dark:via-card dark:to-teal-950/30">
         <div className="space-y-1.5">
           {/* Category */}
-          <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider">
+          <p className="text-[9px] sm:text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold uppercase tracking-wider">
             {product.category || "Combo Offers"}
           </p>
 
@@ -211,7 +211,7 @@ const CategoryProductCard = ({ slot, product, index, isProductLink, addToCart }:
                 </svg>
               ))}
             </div>
-            <span className="text-[10px] sm:text-xs text-muted-foreground/80 ml-0.5">({reviews} reviews)</span>
+            <span className="text-[10px] sm:text-xs text-slate-600 dark:text-slate-300 ml-0.5">({reviews} reviews)</span>
           </div>
         </div>
 
@@ -220,7 +220,7 @@ const CategoryProductCard = ({ slot, product, index, isProductLink, addToCart }:
           <div className="flex flex-col items-start sm:flex-row sm:items-baseline gap-0.5 sm:gap-1.5 min-w-0">
             <span className="text-sm sm:text-base md:text-lg font-serif font-bold text-primary leading-none">₹{price.toLocaleString()}</span>
             {originalPrice && (
-              <span className="text-[10px] sm:text-xs text-muted-foreground/60 line-through leading-none">₹{originalPrice.toLocaleString()}</span>
+              <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 line-through leading-none">₹{originalPrice.toLocaleString()}</span>
             )}
           </div>
           

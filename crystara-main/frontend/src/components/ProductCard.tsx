@@ -219,14 +219,28 @@ const ProductCard = ({ product, index = 0, linkTo }: ProductCardProps) => {
           )}
         </div>
 
-        <Link to={productLink} className="block p-2 sm:p-3">
-          <p className="text-[9px] sm:text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">{product.category}</p>
+        <Link
+          to={productLink}
+          className="block p-2 sm:p-3 border-t border-emerald-500/10 bg-gradient-to-br from-emerald-50/90 via-white to-teal-50/80 dark:from-emerald-950/40 dark:via-card dark:to-teal-950/35 h-[8.75rem] sm:h-[9.5rem] overflow-hidden"
+        >
+          <p className="text-[9px] sm:text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold uppercase tracking-wider mb-0.5">{product.category}</p>
           <h3 className="font-serif font-semibold text-foreground text-xs sm:text-sm mb-0.5 line-clamp-1 sm:line-clamp-2">{product.name}</h3>
-          {product.benefit && <p className="text-[9px] sm:text-[10px] text-muted-foreground mb-1 hidden sm:block">{product.benefit}</p>}
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+          {product.benefit && (
+            <p
+              className="hidden sm:block text-[9px] sm:text-[10px] text-slate-600 dark:text-slate-300 mb-1 overflow-hidden"
+              style={{
+                display: "-webkit-box",
+                WebkitBoxOrient: "vertical",
+                WebkitLineClamp: 2,
+              }}
+            >
+              {product.benefit}
+            </p>
+          )}
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto">
             <div className="flex flex-col items-start sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
               <span className="text-xs sm:text-base font-bold text-primary leading-none">₹{product.price.toLocaleString()}</span>
-              {product.originalPrice && <span className="text-[9px] sm:text-xs text-muted-foreground line-through leading-none">₹{product.originalPrice.toLocaleString()}</span>}
+              {product.originalPrice && <span className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 line-through leading-none">₹{product.originalPrice.toLocaleString()}</span>}
             </div>
             {/* Mobile: inline Add button */}
             {!isAdmin && (

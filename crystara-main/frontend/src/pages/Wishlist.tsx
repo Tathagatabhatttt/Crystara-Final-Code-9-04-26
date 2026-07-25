@@ -185,13 +185,13 @@ const WishlistItemCard = ({
       {/* Info */}
       <div className="p-3 flex flex-col flex-1 justify-between">
         <div>
-          <p className="text-[10px] text-muted-foreground uppercase">{item.category}</p>
+          <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold uppercase">{item.category}</p>
           <Link to={`/product/${item.id}`}>
             <h3 className="font-serif font-semibold text-sm line-clamp-2 hover:text-primary">{item.name}</h3>
           </Link>
           <div className="flex flex-col items-start sm:flex-row sm:items-center gap-0.5 sm:gap-2 my-1.5">
             <span className="text-sm font-bold text-primary leading-none">₹{item.price.toLocaleString()}</span>
-            {item.originalPrice && <span className="text-[10px] text-muted-foreground line-through leading-none">₹{item.originalPrice.toLocaleString()}</span>}
+            {item.originalPrice && <span className="text-[10px] text-slate-500 dark:text-slate-400 line-through leading-none">₹{item.originalPrice.toLocaleString()}</span>}
           </div>
         </div>
         <Button size="sm" className="w-full text-xs h-8 mt-2" onClick={() => onMoveToCart(item)}>

@@ -225,7 +225,7 @@ const ProductDetail = () => {
                 <span className="text-2xl md:text-3xl font-bold text-primary">₹{product.price.toLocaleString()}</span>
                 {product.originalPrice && (
                   <>
-                    <span className="text-lg md:text-xl text-muted-foreground line-through">₹{product.originalPrice.toLocaleString()}</span>
+                    <span className="text-lg md:text-xl text-slate-500 dark:text-slate-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
                     <Badge variant="destructive" className="text-sm font-bold px-2.5 py-1 shadow-sm">{discount}% OFF</Badge>
                   </>
                 )}

@@ -88,9 +88,10 @@
     "fdtlwhd28lt8eipjv0ijjy",
     "axhwrjrmee938d0s1w2cpj",
     "2a2z6wdx382ax7f4r1edd",
-    "75l7lfi8px3um0fzsqwrx"
+    "75l7lfi8px3um0fzsqwrx",
+    "b1pbc5eq3rm5i2ka0w4gj5"
   ],
-  "pageViews": 828,
+  "pageViews": 840,
   "productClicks": {
     "pyramids-orgone-pyramid-money-magnet": 4,
     "bracelets-chip-bracelet-black-tourmaline": 6,
@@ -114,7 +115,8 @@
     "rings-heart-shaped-citrine": 1,
     "rings-boho-green-jade": 1,
     "lockets-tortoise-shaped-pendant-rose-quartz": 1,
-    "lockets-raw-stone-pendant-tiger-eye": 1
+    "lockets-raw-stone-pendant-tiger-eye": 1,
+    "combo-dhan-yog-prosperity": 2
   },
   "cartAdditions": {
     "pyramids-orgone-pyramid-money-magnet": 2,
@@ -238,6 +240,11 @@
       "name": "Tiger Eye Raw Stone Pendant",
       "category": "Lockets / Pendants",
       "image": "https://www.maitriexport.com/cdn/shop/files/2-9_a7cb4b62-9086-49bf-a114-50a855cf324f.jpg?v=1699446728&width=800"
+    },
+    "combo-dhan-yog-prosperity": {
+      "name": "Money magnet  combo  Combo Offers",
+      "category": "Combos",
+      "image": "https://faebjeyibycwwlsenmzx.supabase.co/storage/v1/object/public/product-images/products/combo-dhan-yog-prosperity-1784052104219.png"
     }
   }
 }
