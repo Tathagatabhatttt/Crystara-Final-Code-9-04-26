@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { CrystalButton } from "./CrystalButton";
 import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
+import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { saveDateOfBirth } from "@/lib/dateOfBirth";
 
@@ -23,13 +24,16 @@ const CustomizeYourOwn = () => {
     }
   }, [profile?.date_of_birth, birthDate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const destiny = calculateDestinyNumber(birthDate);
     const ruling = calculateMulank(birthDate);
     if (destiny > 0) {
       if (session?.access_token) {
-        void saveDateOfBirth(session.access_token, birthDate);
+        const result = await saveDateOfBirth(session.access_token, birthDate);
+        if (!result.ok) {
+          toast.error(result.error || "Could not save your date of birth");
+        }
       }
       navigate(`/customize-your-own?destiny=${destiny}&mulank=${ruling}&dob=${birthDate}`);
     }

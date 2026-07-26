@@ -666,18 +666,107 @@ app.patch("/profile", verifyAuth, async (req, res) => {
 
     const { data, error } = await supabase
       .from("user_profiles")
-      .update(updates)
-      .eq("user_id", req.user.id)
+      .upsert(
+        {
+          user_id: req.user.id,
+          email: req.user.email || null,
+          ...updates,
+        },
+        { onConflict: "user_id" },
+      )
       .select();
 
     if (error) {
-      return res.status(400).json({ error: error.message });
+      const message = error.message || "";
+      if (message.includes("date_of_birth")) {
+        return res.status(503).json({
+          error:
+            "date_of_birth column is missing. Run add_date_of_birth_to_user_profiles.sql in Supabase.",
+          detail: message,
+        });
+      }
+      return res.status(400).json({ error: message });
     }
 
     return res.json({ success: true, profile: data[0] });
   } catch (error) {
     console.error("[profile] Error updating profile:", error);
     return res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+// Dedicated DOB save used by Customize Your Own
+app.post("/profile/date-of-birth", verifyAuth, async (req, res) => {
+  try {
+    const { date_of_birth: dateOfBirth } = req.body || {};
+
+    if (
+      typeof dateOfBirth !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth)
+    ) {
+      return res.status(400).json({ error: "Invalid date_of_birth format. Use YYYY-MM-DD." });
+    }
+
+    const parsed = new Date(`${dateOfBirth}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.getTime() > Date.now()) {
+      return res.status(400).json({ error: "Date of birth must be a valid past date." });
+    }
+
+    // Prefer update so we never wipe other profile fields via partial upsert.
+    const { data: updatedRows, error: updateError } = await supabase
+      .from("user_profiles")
+      .update({
+        date_of_birth: dateOfBirth,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", req.user.id)
+      .select("user_id,email,name,phone,date_of_birth,role,updated_at");
+
+    if (updateError) {
+      const message = updateError.message || "";
+      if (message.includes("date_of_birth")) {
+        return res.status(503).json({
+          error:
+            "date_of_birth column is missing. Run add_date_of_birth_to_user_profiles.sql in Supabase SQL Editor, then try again.",
+          detail: message,
+        });
+      }
+      return res.status(400).json({ error: message });
+    }
+
+    if (updatedRows && updatedRows.length > 0) {
+      return res.json({ success: true, profile: updatedRows[0] });
+    }
+
+    // Profile row missing (rare) — create a minimal one with DOB.
+    const { data: inserted, error: insertError } = await supabase
+      .from("user_profiles")
+      .insert({
+        user_id: req.user.id,
+        email: req.user.email || null,
+        role: "user",
+        date_of_birth: dateOfBirth,
+        updated_at: new Date().toISOString(),
+      })
+      .select("user_id,email,name,phone,date_of_birth,role,updated_at")
+      .single();
+
+    if (insertError) {
+      const message = insertError.message || "";
+      if (message.includes("date_of_birth")) {
+        return res.status(503).json({
+          error:
+            "date_of_birth column is missing. Run add_date_of_birth_to_user_profiles.sql in Supabase SQL Editor, then try again.",
+          detail: message,
+        });
+      }
+      return res.status(400).json({ error: message });
+    }
+
+    return res.json({ success: true, profile: inserted });
+  } catch (error) {
+    console.error("[profile] Error saving date of birth:", error);
+    return res.status(500).json({ error: "Failed to save date of birth" });
   }
 });
 
@@ -738,7 +827,12 @@ app.get("/admin/customers", verifyAuth, verifyAdmin, async (_req, res) => {
   try {
     const authUsersResult = await supabase.auth.admin.listUsers();
 
-    const [
+    let profilesResult;
+    let ordersResult;
+    let wishlistResult;
+    let cartsResult;
+
+    [
       profilesResult,
       ordersResult,
       wishlistResult,
@@ -759,6 +853,17 @@ app.get("/admin/customers", verifyAuth, verifyAdmin, async (_req, res) => {
         .from("customer_carts")
         .select("user_id,items,updated_at"),
     ]);
+
+    // If the DOB migration hasn't been run yet, fall back so Customers still loads.
+    if (profilesResult.error?.message?.includes("date_of_birth")) {
+      console.warn(
+        "[admin] date_of_birth missing on user_profiles. Falling back without DOB. Run add_date_of_birth_to_user_profiles.sql",
+      );
+      profilesResult = await supabase
+        .from("user_profiles")
+        .select("user_id,email,name,phone,role,address_street,address_city,address_state,address_pincode,saved_addresses,created_at,updated_at")
+        .order("created_at", { ascending: false });
+    }
 
     const firstError =
       profilesResult.error ||

@@ -12,7 +12,7 @@ import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
 import { CrystalButton } from "@/components/CrystalButton";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { resolveHeroSlides } from "@/lib/sanityImage";
-import { saveDateOfBirth } from "@/lib/dateOfBirth";
+import { isMissingDobColumnError, saveDateOfBirth } from "@/lib/dateOfBirth";
 
 const destinyData: Record<
   number,
@@ -161,8 +161,26 @@ const CustomizeYourOwnPage = () => {
   useEffect(() => {
     if (!hasValidParams || !dob || !session?.access_token) return;
     if (savedDobRef.current === dob) return;
-    savedDobRef.current = dob;
-    void saveDateOfBirth(session.access_token, dob);
+
+    let cancelled = false;
+    (async () => {
+      const result = await saveDateOfBirth(session.access_token, dob);
+      if (cancelled) return;
+      if (result.ok) {
+        savedDobRef.current = dob;
+      } else {
+        console.error("DOB save failed:", result.error);
+        toast.error(
+          isMissingDobColumnError(result.error)
+            ? "Date of birth could not be saved — database setup is incomplete. Please contact support."
+            : result.error || "Could not save your date of birth",
+        );
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [hasValidParams, dob, session?.access_token]);
 
   const { data: allProducts } = useCatalogProducts();
@@ -214,15 +232,26 @@ const CustomizeYourOwnPage = () => {
     return { destinyMatch, rulingMatch, adminPick };
   }, [allProducts, data.stones, destiny, mulank, rulingInfo.stones]);
 
-  const handleDiscoverCrystals = () => {
+  const handleDiscoverCrystals = async () => {
     if (!dateOfBirth) {
       setFormError("Please enter your date of birth");
       return;
     }
 
     if (session?.access_token) {
-      void saveDateOfBirth(session.access_token, dateOfBirth);
-      savedDobRef.current = dateOfBirth;
+      const result = await saveDateOfBirth(session.access_token, dateOfBirth);
+      if (result.ok) {
+        savedDobRef.current = dateOfBirth;
+        toast.success("Date of birth saved to your profile");
+      } else {
+        toast.error(
+          isMissingDobColumnError(result.error)
+            ? "Date of birth could not be saved — database setup is incomplete. Please contact support."
+            : result.error || "Could not save your date of birth",
+        );
+      }
+    } else {
+      toast.info("Sign in to save your date of birth to your profile");
     }
 
     const destinyNumber = calculateDestinyNumber(dateOfBirth);

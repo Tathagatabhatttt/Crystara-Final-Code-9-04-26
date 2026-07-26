@@ -2597,10 +2597,15 @@ const AdminPanel = () => {
                           <CardDescription>
                             {customer.email || "No email"}
                             {customer.phone ? ` | ${customer.phone}` : ""}
-                            {customer.date_of_birth
-                              ? ` | DOB ${String(customer.date_of_birth).slice(0, 10)}`
-                              : ""}
                           </CardDescription>
+                          <p className="mt-2 text-sm font-medium text-foreground">
+                            Date of Birth:{" "}
+                            <span className={customer.date_of_birth ? "text-primary" : "text-muted-foreground"}>
+                              {customer.date_of_birth
+                                ? String(customer.date_of_birth).slice(0, 10)
+                                : "Not recorded"}
+                            </span>
+                          </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge variant="secondary">{customer.orders.length} orders</Badge>
@@ -2625,6 +2630,17 @@ const AdminPanel = () => {
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-sm">
                       <div className="space-y-4">
+                        <div>
+                          <h4 className="font-semibold mb-2">Date of Birth</h4>
+                          <div className="rounded-lg bg-muted/50 p-3">
+                            <p className={customer.date_of_birth ? "text-foreground" : "text-muted-foreground"}>
+                              {customer.date_of_birth
+                                ? String(customer.date_of_birth).slice(0, 10)
+                                : "Not recorded"}
+                            </p>
+                          </div>
+                        </div>
+
                         <div>
                           <h4 className="font-semibold mb-2">Delivery Addresses</h4>
                           <div className="rounded-lg bg-muted/50 p-3 space-y-2">
