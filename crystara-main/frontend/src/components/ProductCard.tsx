@@ -239,8 +239,8 @@ const ProductCard = ({ product, index = 0, linkTo }: ProductCardProps) => {
           )}
           <div className="flex items-center justify-between gap-1.5 sm:gap-2 mt-auto">
             <div className="flex flex-col items-start sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
-              <span className="text-xs sm:text-base font-bold text-primary leading-none">₹{product.price.toLocaleString()}</span>
-              {product.originalPrice && <span className="text-[9px] sm:text-xs text-slate-500 dark:text-slate-400 line-through leading-none">₹{product.originalPrice.toLocaleString()}</span>}
+              <span className="font-sans text-xs sm:text-base font-bold tabular-nums text-primary leading-none">₹{product.price.toLocaleString()}</span>
+              {product.originalPrice && <span className="font-sans text-[9px] sm:text-xs tabular-nums text-slate-500 dark:text-slate-400 line-through leading-none">₹{product.originalPrice.toLocaleString()}</span>}
             </div>
             {/* Mobile: inline Add button */}
             {!isAdmin && (

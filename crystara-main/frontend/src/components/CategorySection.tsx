@@ -218,9 +218,9 @@ const CategoryProductCard = ({ slot, product, index, isProductLink, addToCart }:
         {/* Pricing & Add Button */}
         <div className="flex items-center justify-between border-t border-border/10 pt-2.5 gap-2">
           <div className="flex flex-col items-start sm:flex-row sm:items-baseline gap-0.5 sm:gap-1.5 min-w-0">
-            <span className="text-sm sm:text-base md:text-lg font-serif font-bold text-primary leading-none">₹{price.toLocaleString()}</span>
+            <span className="font-sans text-sm sm:text-base md:text-lg font-bold tabular-nums text-primary leading-none">₹{price.toLocaleString()}</span>
             {originalPrice && (
-              <span className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 line-through leading-none">₹{originalPrice.toLocaleString()}</span>
+              <span className="font-sans text-[10px] sm:text-xs tabular-nums text-slate-500 dark:text-slate-400 line-through leading-none">₹{originalPrice.toLocaleString()}</span>
             )}
           </div>
           

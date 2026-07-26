@@ -230,10 +230,10 @@ const ProductDetail = () => {
 
               {/* Price */}
               <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl md:text-3xl font-bold text-primary">₹{product.price.toLocaleString()}</span>
+                <span className="font-sans text-2xl md:text-3xl font-bold tabular-nums text-primary">₹{product.price.toLocaleString()}</span>
                 {product.originalPrice && (
                   <>
-                    <span className="text-lg md:text-xl text-slate-500 dark:text-slate-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                    <span className="font-sans text-lg md:text-xl tabular-nums text-slate-500 dark:text-slate-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
                     <Badge variant="destructive" className="text-sm font-bold px-2.5 py-1 shadow-sm">{discount}% OFF</Badge>
                   </>
                 )}
