@@ -965,6 +965,73 @@ const getAnalyticsSince = (range) => {
   return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 };
 
+const getAnalyticsOverviewFromEvents = async (since) => {
+  const events = [];
+  const pageSize = 1000;
+
+  for (let offset = 0; ; offset += pageSize) {
+    let query = supabase
+      .from("analytics_events")
+      .select(
+        "id,event_type,visitor_id,session_id,product_id,product_name,category,image",
+      )
+      .order("id", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (since) query = query.gte("created_at", since);
+
+    const { data, error } = await query;
+    if (error) return { data: null, error };
+
+    events.push(...(data || []));
+    if (!data || data.length < pageSize) break;
+  }
+
+  const visitors = new Set();
+  const sessions = new Set();
+  let pageViews = 0;
+  const productClicks = new Map();
+  const cartAdditions = new Map();
+
+  const addProductEvent = (target, event) => {
+    if (!event.product_id) return;
+    const existing = target.get(event.product_id);
+    target.set(event.product_id, {
+      id: event.product_id,
+      count: (existing?.count || 0) + 1,
+      name: event.product_name || existing?.name || event.product_id,
+      category: event.category || existing?.category || "Unknown",
+      image: event.image || existing?.image || "",
+    });
+  };
+
+  events.forEach((event) => {
+    if (event.event_type === "page_view") {
+      pageViews += 1;
+      if (event.visitor_id) visitors.add(event.visitor_id);
+      if (event.session_id) sessions.add(event.session_id);
+    } else if (event.event_type === "product_click") {
+      addProductEvent(productClicks, event);
+    } else if (event.event_type === "add_to_cart") {
+      addProductEvent(cartAdditions, event);
+    }
+  });
+
+  const sortedProducts = (eventMap) =>
+    [...eventMap.values()].sort((a, b) => b.count - a.count);
+
+  return {
+    data: {
+      pageViews,
+      uniqueVisitors: visitors.size,
+      sessions: sessions.size,
+      productClicks: sortedProducts(productClicks),
+      cartAdditions: sortedProducts(cartAdditions),
+    },
+    error: null,
+  };
+};
+
 // Analytics tracking endpoint (public). Events are persisted in Supabase
 // because serverless filesystems are ephemeral and differ between instances.
 app.post("/api/analytics/track", async (req, res) => {
@@ -1035,10 +1102,19 @@ app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => 
       : "30d";
     const since = getAnalyticsSince(range);
 
-    const { data: eventOverview, error: overviewError } = await supabase.rpc(
+    let { data: eventOverview, error: overviewError } = await supabase.rpc(
       "get_analytics_overview",
       { p_since: since },
     );
+
+    // The SQL aggregate function may not be visible immediately after a
+    // migration/schema-cache refresh. Direct aggregation keeps the dashboard
+    // functional as long as the durable events table exists.
+    if (overviewError?.code === "PGRST202") {
+      const fallback = await getAnalyticsOverviewFromEvents(since);
+      eventOverview = fallback.data;
+      overviewError = fallback.error;
+    }
 
     if (overviewError) {
       console.error("[analytics] Overview query failed:", overviewError);
