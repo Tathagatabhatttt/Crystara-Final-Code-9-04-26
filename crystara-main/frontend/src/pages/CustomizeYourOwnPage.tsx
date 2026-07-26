@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BadgeCheck, Crown, Sparkles, Stars, WandSparkles, ArrowLeft } from "lucide-react";
 import Header from "@/components/Header";
@@ -115,7 +115,8 @@ const hasStoneMatch = (product: { name: string; stone?: string }, stones: string
 const CustomizeYourOwnPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const { data: siteSettings } = useSiteSettings();
 
   // Search parameters for results view
@@ -136,11 +137,12 @@ const CustomizeYourOwnPage = () => {
 
   // Sign in check for displaying reports
   useEffect(() => {
-    if (hasValidParams && !user) {
+    if (!authLoading && hasValidParams && !user) {
       toast.error("Please sign in first to customize your bracelet");
-      navigate("/auth");
+      const returnUrl = `${location.pathname}${location.search}`;
+      navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`, { replace: true });
     }
-  }, [user, navigate, hasValidParams]);
+  }, [authLoading, user, navigate, hasValidParams, location.pathname, location.search]);
 
   const { data: allProducts } = useCatalogProducts();
 
@@ -326,8 +328,9 @@ const CustomizeYourOwnPage = () => {
     );
   }
 
-  // If parameter is present but user not authenticated, keep in empty/redirecting state
-  if (!user) return null;
+  // Wait for Supabase to restore the persisted session before deciding
+  // whether this protected results view should redirect.
+  if (authLoading || !user) return null;
 
   // VIEW 2: Cosmic report and recommendations
   return (
