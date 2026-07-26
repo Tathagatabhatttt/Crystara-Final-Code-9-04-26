@@ -1,12 +1,6 @@
 import { useMemo } from "react";
 import {
   productCatalog as staticCatalog,
-  getAllProducts as getStaticProducts,
-  getFeaturedProducts as getStaticFeaturedProducts,
-  getProductsByCategory as getStaticProductsByCategory,
-  getProductsBySubCategory as getStaticProductsBySubCategory,
-  getProductById as getStaticProductById,
-  searchProducts as searchStaticProducts,
   type ProductCategory,
 } from "@/data/products";
 import { useAllProducts, useProductCatalog, type FlatProduct } from "@/hooks/useProducts";
@@ -18,22 +12,12 @@ import { useAllProducts, useProductCatalog, type FlatProduct } from "@/hooks/use
  *   static hardcoded products  ←  Sanity CMS overrides  ←  Supabase overrides
  * and filters out any product with `isDeleted === true`.
  *
- * We fall back to the raw static list ONLY while the query is still loading
- * for the very first time, so the page isn't empty during that brief moment.
+ * Supabase deletion records are authoritative, so products remain empty on
+ * initial load rather than briefly showing deleted static products.
  */
 export function useCatalogProducts() {
   const query = useAllProducts();
-  const staticFallback = useMemo(() => getStaticProducts(), []);
-
-  const data = useMemo(() => {
-    // Once the query has resolved at least once, always use its result.
-    // query.data is already fully merged and deletion-filtered.
-    if (query.data) return query.data;
-    // While still loading for the first time, show the static catalog.
-    return staticFallback;
-  }, [query.data, staticFallback]);
-
-  return { ...query, data };
+  return { ...query, data: query.data || [] };
 }
 
 export function useCatalogStructure() {

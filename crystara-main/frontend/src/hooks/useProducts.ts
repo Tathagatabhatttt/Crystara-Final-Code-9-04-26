@@ -51,6 +51,7 @@ export type FlatProduct = ProductVariant & {
     subCategorySlug: string;
     isDeleted?: boolean;
     isFromSanity?: boolean;
+    isFromSupabase?: boolean;
     stock?: number;
     videoUrl?: string;
     alignedNumbers?: number[];
@@ -101,6 +102,9 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
         .from("products")
         .select("*")
         .then(({ data, error }) => {
+            // Supabase contains deletion tombstones and storefront overrides.
+            // If this request fails, returning the static catalog would bring
+            // deleted or outdated products back into customer-facing pages.
             if (error) throw error;
             if (!data) return [] as FlatProduct[];
             return data.map((row: any) => ({
@@ -124,11 +128,8 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 rulingNumbers: Array.isArray(row.ruling_numbers) ? row.ruling_numbers.map(Number) : [],
                 destinyNumbers: Array.isArray(row.destiny_numbers) ? row.destiny_numbers.map(Number) : [],
                 isAdminCustomized: row.is_admin_customized || false,
+                isFromSupabase: true,
             })) as FlatProduct[];
-        })
-        .catch((err) => {
-            console.error("Supabase products fetch failed:", err);
-            return [] as FlatProduct[];
         });
 
     // Run fetches in parallel, with a 5-second timeout on the Sanity query
@@ -140,6 +141,7 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
     const staticProducts = getStaticProducts().map(p => ({
         ...p,
         isFromSanity: false,
+        isFromSupabase: false,
         featured: p.featured || false,
     })) as FlatProduct[];
 
@@ -186,6 +188,7 @@ export function useAllProducts() {
         staleTime: 0,              // Always consider data stale so refetch runs on mount
         gcTime: 1000 * 60 * 30,   // Keep in memory for 30 min but always revalidate
         refetchOnWindowFocus: true, // Refetch when admin returns to the tab after editing
+        refetchOnReconnect: true,
     });
 }
 

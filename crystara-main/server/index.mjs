@@ -4,9 +4,6 @@ import Razorpay from "razorpay";
 import cors from "cors";
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import fs from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 const isVercel = Boolean(process.env.VERCEL);
@@ -16,44 +13,6 @@ const supabase = createClient(
   process.env.SUPABASE_URL || "",
   process.env.SUPABASE_SERVICE_ROLE_KEY || "",
 );
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ANALYTICS_FILE = isVercel
-  ? "/tmp/analytics.json"
-  : join(__dirname, "analytics.json");
-
-// Load initial state
-let analyticsData = {
-  uniqueVisitors: [],
-  pageViews: 0,
-  productClicks: {},
-  cartAdditions: {},
-  productMetadata: {}
-};
-
-if (fs.existsSync(ANALYTICS_FILE)) {
-  try {
-    const rawData = fs.readFileSync(ANALYTICS_FILE, "utf-8");
-    const parsed = JSON.parse(rawData);
-    analyticsData = {
-      uniqueVisitors: Array.isArray(parsed.uniqueVisitors) ? parsed.uniqueVisitors : [],
-      pageViews: typeof parsed.pageViews === "number" ? parsed.pageViews : 0,
-      productClicks: parsed.productClicks && typeof parsed.productClicks === "object" ? parsed.productClicks : {},
-      cartAdditions: parsed.cartAdditions && typeof parsed.cartAdditions === "object" ? parsed.cartAdditions : {},
-      productMetadata: parsed.productMetadata && typeof parsed.productMetadata === "object" ? parsed.productMetadata : {}
-    };
-  } catch (err) {
-    console.error("Error loading analytics file:", err);
-  }
-}
-
-function saveAnalytics() {
-  try {
-    fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(analyticsData, null, 2));
-  } catch (err) {
-    console.error("Error saving analytics file:", err);
-  }
-}
 
 const allowedOrigins = [
   process.env.CORS_ORIGIN,
@@ -983,46 +942,85 @@ app.delete("/admin/users/:userId", verifyAuth, verifyAdmin, async (req, res) => 
   }
 });
 
-// Analytics tracking endpoint (public)
-app.post("/api/analytics/track", (req, res) => {
+const ANALYTICS_EVENT_TYPES = new Set([
+  "page_view",
+  "product_click",
+  "add_to_cart",
+]);
+
+const getAnalyticsSince = (range) => {
+  if (range === "all") return null;
+  if (range === "today") {
+    // Start of today in India Standard Time (UTC+05:30).
+    const offsetMs = 5.5 * 60 * 60 * 1000;
+    const indiaNow = new Date(Date.now() + offsetMs);
+    return new Date(
+      Date.UTC(
+        indiaNow.getUTCFullYear(),
+        indiaNow.getUTCMonth(),
+        indiaNow.getUTCDate(),
+      ) - offsetMs,
+    ).toISOString();
+  }
+  return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+};
+
+// Analytics tracking endpoint (public). Events are persisted in Supabase
+// because serverless filesystems are ephemeral and differ between instances.
+app.post("/api/analytics/track", async (req, res) => {
   try {
-    const { eventType, productId, productName, category, image, sessionId } = req.body || {};
-    
-    if (!eventType) {
-      return res.status(400).json({ error: "Missing eventType" });
+    const {
+      eventId,
+      eventType,
+      visitorId,
+      sessionId,
+      path,
+      referrer,
+      productId,
+      productName,
+      category,
+      image,
+    } = req.body || {};
+
+    if (
+      typeof eventId !== "string" ||
+      typeof sessionId !== "string" ||
+      typeof visitorId !== "string" ||
+      !ANALYTICS_EVENT_TYPES.has(eventType)
+    ) {
+      return res.status(400).json({ error: "Invalid analytics event" });
     }
 
-    if (eventType === "page_view") {
-      analyticsData.pageViews = (analyticsData.pageViews || 0) + 1;
-      if (sessionId && !analyticsData.uniqueVisitors.includes(sessionId)) {
-        analyticsData.uniqueVisitors.push(sessionId);
-      }
-    } else if (eventType === "product_click") {
-      if (productId) {
-        analyticsData.productClicks[productId] = (analyticsData.productClicks[productId] || 0) + 1;
-        if (productName) {
-          analyticsData.productMetadata[productId] = {
-            name: productName,
-            category: category || "Unknown",
-            image: image || ""
-          };
-        }
-      }
-    } else if (eventType === "add_to_cart") {
-      if (productId) {
-        analyticsData.cartAdditions[productId] = (analyticsData.cartAdditions[productId] || 0) + 1;
-        if (productName) {
-          analyticsData.productMetadata[productId] = {
-            name: productName,
-            category: category || "Unknown",
-            image: image || ""
-          };
-        }
-      }
+    if (eventType !== "page_view" && !productId) {
+      return res.status(400).json({ error: "Missing productId" });
     }
 
-    saveAnalytics();
-    return res.json({ success: true });
+    const { error } = await supabase.from("analytics_events").insert({
+      event_id: eventId.slice(0, 200),
+      event_type: eventType,
+      visitor_id: visitorId.slice(0, 200),
+      session_id: sessionId.slice(0, 200),
+      path: typeof path === "string" ? path.slice(0, 1000) : null,
+      referrer: typeof referrer === "string" ? referrer.slice(0, 2000) : null,
+      product_id: typeof productId === "string" ? productId.slice(0, 500) : null,
+      product_name: typeof productName === "string" ? productName.slice(0, 1000) : null,
+      category: typeof category === "string" ? category.slice(0, 500) : null,
+      image: typeof image === "string" ? image.slice(0, 4000) : null,
+    });
+
+    // React Strict Mode and network retries can submit the same event twice.
+    if (error && error.code !== "23505") {
+      console.error("[analytics] Event insert failed:", error);
+      return res.status(503).json({
+        error: "Analytics storage is unavailable",
+        detail: error.message,
+      });
+    }
+
+    return res.status(error?.code === "23505" ? 200 : 201).json({
+      success: true,
+      duplicate: error?.code === "23505",
+    });
   } catch (error) {
     console.error("[analytics] Error tracking event:", error);
     return res.status(500).json({ error: "Failed to track event" });
@@ -1032,6 +1030,24 @@ app.post("/api/analytics/track", (req, res) => {
 // Analytics overview endpoint (admin only)
 app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => {
   try {
+    const range = ["today", "30d", "all"].includes(req.query.range)
+      ? req.query.range
+      : "30d";
+    const since = getAnalyticsSince(range);
+
+    const { data: eventOverview, error: overviewError } = await supabase.rpc(
+      "get_analytics_overview",
+      { p_since: since },
+    );
+
+    if (overviewError) {
+      console.error("[analytics] Overview query failed:", overviewError);
+      return res.status(503).json({
+        error: "Analytics storage is unavailable",
+        detail: overviewError.message,
+      });
+    }
+
     // 1. Fetch wishlist from Supabase
     const { data: wishlistRows, error: wishlistError } = await supabase
       .from("wishlist")
@@ -1039,6 +1055,16 @@ app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => 
 
     if (wishlistError) {
       console.error("[analytics] Error fetching wishlist:", wishlistError);
+    }
+
+    let ordersQuery = supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true });
+    if (since) ordersQuery = ordersQuery.gte("created_at", since);
+    const { count: orderCount, error: orderCountError } = await ordersQuery;
+
+    if (orderCountError) {
+      console.error("[analytics] Error counting orders:", orderCountError);
     }
 
     // Process wishlist counts
@@ -1052,33 +1078,33 @@ app.get("/api/analytics/overview", verifyAuth, verifyAdmin, async (req, res) => 
       });
     }
 
-    // 2. Format product stats
+    // Format current wishlist stats
     const formatProductStats = (countMap) => {
       return Object.entries(countMap)
         .map(([id, count]) => {
-          const meta = analyticsData.productMetadata[id] || {};
           return {
             id,
             count,
-            name: meta.name || id,
-            category: meta.category || "Unknown",
-            image: meta.image || ""
+            name: id,
+            category: "Unknown",
+            image: ""
           };
         })
         .sort((a, b) => b.count - a.count);
     };
 
-    const productClicksList = formatProductStats(analyticsData.productClicks);
-    const cartAdditionsList = formatProductStats(analyticsData.cartAdditions);
     const wishlistInterestsList = formatProductStats(wishlistCounts);
 
-    // 3. Return overview stats
     return res.json({
-      pageViews: analyticsData.pageViews || 0,
-      uniqueVisitors: analyticsData.uniqueVisitors ? analyticsData.uniqueVisitors.length : 0,
-      productClicks: productClicksList,
-      cartAdditions: cartAdditionsList,
-      wishlistInterests: wishlistInterestsList
+      pageViews: eventOverview?.pageViews || 0,
+      uniqueVisitors: eventOverview?.uniqueVisitors || 0,
+      sessions: eventOverview?.sessions || 0,
+      orders: orderCount || 0,
+      productClicks: eventOverview?.productClicks || [],
+      cartAdditions: eventOverview?.cartAdditions || [],
+      wishlistInterests: wishlistInterestsList,
+      range,
+      since,
     });
   } catch (error) {
     console.error("[analytics] Error building overview stats:", error);

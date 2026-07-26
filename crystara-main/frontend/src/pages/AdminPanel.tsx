@@ -78,9 +78,12 @@ interface AnalyticsProductItem {
 interface AnalyticsOverview {
   pageViews: number;
   uniqueVisitors: number;
+  sessions: number;
+  orders: number;
   productClicks: AnalyticsProductItem[];
   cartAdditions: AnalyticsProductItem[];
   wishlistInterests: AnalyticsProductItem[];
+  range: "today" | "30d" | "all";
 }
 
 interface OrderItem {
@@ -235,6 +238,7 @@ const AdminPanel = () => {
   const [pagination, setPagination] = useState<PaginationData | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
+  const [analyticsRange, setAnalyticsRange] = useState<"today" | "30d" | "all">("30d");
   const [customers, setCustomers] = useState<CustomerDetail[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
@@ -537,7 +541,7 @@ const AdminPanel = () => {
       fetchSupabaseSiteSettings();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, statusFilter, currentPage]);
+  }, [isAdmin, statusFilter, currentPage, analyticsRange]);
 
   // Real-time subscription for admin order updates
   useEffect(() => {
@@ -583,7 +587,7 @@ const AdminPanel = () => {
     try {
       setLoadingAnalytics(true);
       const response = await fetch(
-        `${API_URL}/api/analytics/overview`,
+        `${API_URL}/api/analytics/overview?range=${analyticsRange}`,
         {
           headers: {
             Authorization: `Bearer ${session?.access_token}`,
@@ -592,13 +596,16 @@ const AdminPanel = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch analytics");
+        const detail = await response.text();
+        throw new Error(`Failed to fetch analytics (${response.status}): ${detail}`);
       }
 
       const data = await response.json();
       setAnalytics(data);
     } catch (err) {
       console.error("Error fetching analytics:", err);
+      setAnalytics(null);
+      toast.error(err instanceof Error ? err.message : "Failed to fetch analytics");
     } finally {
       setLoadingAnalytics(false);
     }
@@ -1007,6 +1014,9 @@ const AdminPanel = () => {
         sub_category_slug: prodSubCategorySlug || (prodSubCategory ? slugify(prodSubCategory) : null),
         gallery_images: finalGalleryImages,
         video_url: finalVideoUrl || null,
+        // Saving or re-adding a product must make it active again. Without
+        // this, an existing deletion tombstone keeps the replacement hidden.
+        is_deleted: false,
         aligned_numbers: Array.from(new Set([...prodRulingNumbers, ...prodDestinyNumbers])),
         ruling_numbers: prodRulingNumbers,
         destiny_numbers: prodDestinyNumbers,
@@ -1016,11 +1026,9 @@ const AdminPanel = () => {
       const legacyProductRecord = { ...productRecord } as typeof productRecord & {
         ruling_numbers?: number[];
         destiny_numbers?: number[];
-        is_admin_customized?: boolean;
       };
       delete legacyProductRecord.ruling_numbers;
       delete legacyProductRecord.destiny_numbers;
-      delete legacyProductRecord.is_admin_customized;
 
       const upsertWithFallback = async () => {
         const { error } = await supabase.from("products").upsert(productRecord);
@@ -1029,8 +1037,7 @@ const AdminPanel = () => {
         const message = error.message?.toLowerCase() || "";
         const isSchemaMismatch =
           message.includes("destiny_numbers") ||
-          message.includes("ruling_numbers") ||
-          message.includes("schema cache");
+          message.includes("ruling_numbers");
 
         if (!isSchemaMismatch) return error;
 
@@ -1039,14 +1046,38 @@ const AdminPanel = () => {
         return legacyError || null;
       };
 
+      // There can be only one product in the admin spotlight. Selecting this
+      // product removes the selection from every other product first.
+      if (prodIsAdminCustomized) {
+        const { error: clearSpotlightError } = await supabase
+          .from("products")
+          .update({ is_admin_customized: false })
+          .eq("is_admin_customized", true)
+          .neq("id", prodId);
+
+        if (clearSpotlightError) {
+          throw new Error(
+            `Could not update the admin spotlight. Make sure the is_admin_customized migration has been run. ${clearSpotlightError.message}`,
+          );
+        }
+      }
+
       const dbError = await upsertWithFallback();
 
       if (dbError) throw dbError;
 
-      toast.success(editingProduct ? "Product updated successfully" : "Product created successfully");
+      toast.success(
+        prodIsAdminCustomized
+          ? "Product saved and selected for the admin spotlight"
+          : editingProduct
+            ? "Product updated successfully"
+            : "Product created successfully",
+      );
       setIsProductModalOpen(false);
-      fetchSupabaseProducts();
-      queryClient.invalidateQueries({ queryKey: ["sanity-all-products"] });
+      await Promise.all([
+        fetchSupabaseProducts(),
+        queryClient.refetchQueries({ queryKey: ["sanity-all-products"] }),
+      ]);
     } catch (err: any) {
       console.error("Save product error:", err);
       toast.error(err.message || "Failed to save product");
@@ -2156,7 +2187,7 @@ const AdminPanel = () => {
                                   )}
                                   {product.isAdminCustomized && (
                                     <Badge variant="outline" className="text-[10px] py-0 px-1 bg-purple-500/10 text-purple-600 border-purple-500/20">
-                                      Admin Customized
+                                      Admin Spotlight
                                     </Badge>
                                   )}
                                   {product.isDeleted && (
@@ -2280,6 +2311,24 @@ const AdminPanel = () => {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6 pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {([
+              ["today", "Today"],
+              ["30d", "30 Days"],
+              ["all", "All Time"],
+            ] as const).map(([value, label]) => (
+              <Button
+                key={value}
+                type="button"
+                size="sm"
+                variant={analyticsRange === value ? "default" : "outline"}
+                onClick={() => setAnalyticsRange(value)}
+              >
+                {label}
+              </Button>
+            ))}
+          </div>
+
           {loadingAnalytics ? (
             <div className="flex justify-center items-center gap-3 py-24">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -2329,8 +2378,8 @@ const AdminPanel = () => {
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Pages / Session</p>
                         <h3 className="text-3xl font-bold mt-1 text-foreground font-serif">
-                          {analytics.uniqueVisitors > 0 
-                            ? (analytics.pageViews / analytics.uniqueVisitors).toFixed(1)
+                          {analytics.sessions > 0
+                            ? (analytics.pageViews / analytics.sessions).toFixed(1)
                             : "0.0"}
                         </h3>
                       </div>
@@ -2347,8 +2396,8 @@ const AdminPanel = () => {
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Order Conversion</p>
                         <h3 className="text-3xl font-bold mt-1 text-foreground font-serif">
-                          {analytics.uniqueVisitors > 0 && stats
-                            ? `${((stats.totalOrders / analytics.uniqueVisitors) * 100).toFixed(1)}%`
+                          {analytics.uniqueVisitors > 0
+                            ? `${((analytics.orders / analytics.uniqueVisitors) * 100).toFixed(1)}%`
                             : "0.0%"}
                         </h3>
                       </div>
@@ -3666,7 +3715,7 @@ const AdminPanel = () => {
                     </label>
                   </div>
 
-                  {/* Admin Customized */}
+                  {/* Admin-curated spotlight */}
                   <div className="flex items-center gap-2 pt-2">
                     <input
                       type="checkbox"
@@ -3676,9 +3725,12 @@ const AdminPanel = () => {
                       className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
                     />
                     <label htmlFor="prodIsAdminCustomized" className="text-sm font-medium text-foreground cursor-pointer select-none">
-                      Admin Customized (Show in Customize Section)
+                      Select for Admin Spotlight
                     </label>
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Shows this product as the admin-curated choice on the Customize page. Selecting it replaces the previous spotlight product.
+                  </p>
                 </div>
 
                 {/* Vedic Numerology Alignment */}

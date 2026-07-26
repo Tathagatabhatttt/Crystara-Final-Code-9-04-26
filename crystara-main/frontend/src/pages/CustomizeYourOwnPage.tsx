@@ -6,7 +6,6 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { useCatalogProducts } from "@/hooks/useCatalog";
-import { getAllProducts as getStaticProducts } from "@/data/products";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
@@ -113,27 +112,6 @@ const hasStoneMatch = (product: { name: string; stone?: string }, stones: string
       normalize(product.stone).includes(normalize(stone)),
   );
 
-const isAdminCuratedProduct = (product: {
-  id: string;
-  isFromSanity?: boolean;
-  featured?: boolean;
-  rulingNumbers?: number[];
-  destinyNumbers?: number[];
-  alignedNumbers?: number[];
-  videoUrl?: string;
-  galleryImages?: string[];
-}) => {
-  const explicitCustomSignals =
-    (Array.isArray(product.rulingNumbers) && product.rulingNumbers.length > 0) ||
-    (Array.isArray(product.destinyNumbers) && product.destinyNumbers.length > 0) ||
-    (Array.isArray(product.alignedNumbers) && product.alignedNumbers.length > 0) ||
-    Boolean(product.featured) ||
-    Boolean(product.videoUrl) ||
-    (Array.isArray(product.galleryImages) && product.galleryImages.length > 0);
-
-  return product.isFromSanity === false && explicitCustomSignals;
-};
-
 const CustomizeYourOwnPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -165,7 +143,6 @@ const CustomizeYourOwnPage = () => {
   }, [user, navigate, hasValidParams]);
 
   const { data: allProducts } = useCatalogProducts();
-  const staticProductIds = useMemo(() => new Set(getStaticProducts().map((product) => product.id)), []);
 
   const data = destinyData[destiny] || destinyData[1];
   const rulingInfo = rulingStoneData[mulank] || rulingStoneData[1];
@@ -190,9 +167,15 @@ const CustomizeYourOwnPage = () => {
               ? (numbers.includes(number) ? 100 : 0)
               : (hasStoneMatch(product, stones) ? 60 : 0);
 
-          return { product, score };
+          return {
+            product,
+            score,
+            // On equal numerology relevance, prefer the current database
+            // product over an older built-in/Sanity catalog entry.
+            sourcePriority: product.isFromSupabase ? 1 : 0,
+          };
         })
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.score - a.score || b.sourcePriority - a.sourcePriority)
         .find((entry) => entry.score > 0)?.product;
 
     const chosenIds = new Set<string>();
@@ -201,36 +184,12 @@ const CustomizeYourOwnPage = () => {
     const rulingMatch = ranking("ruling", mulank, rulingInfo.stones, chosenIds);
     if (rulingMatch) chosenIds.add(rulingMatch.id);
 
-    // Prioritize explicitly designated "Admin Customized" products
-    const explicitAdminPick = products.find(p => p.isAdminCustomized && !chosenIds.has(p.id));
+    // The spotlight is opt-in: only a product explicitly selected by an admin
+    // may appear here. It intentionally has no automatic fallback.
+    const adminPick = products.find((product) => product.isAdminCustomized);
 
-    const adminCandidates = [...products]
-      .filter((product) => !chosenIds.has(product.id))
-      .map((product) => {
-        const isCustomDbProduct = !staticProductIds.has(product.id);
-        const customSignals =
-          isCustomDbProduct ||
-          isAdminCuratedProduct(product) ||
-          Boolean(product.featured) ||
-          Boolean(product.videoUrl) ||
-          (Array.isArray(product.galleryImages) && product.galleryImages.length > 0);
-
-        const score =
-          (customSignals ? 100 : 0) +
-          (isCustomDbProduct ? 25 : 0) +
-          (product.featured ? 20 : 0) +
-          ((Array.isArray(product.rulingNumbers) && product.rulingNumbers.length > 0) ||
-          (Array.isArray(product.destinyNumbers) && product.destinyNumbers.length > 0)
-            ? 10
-            : 0);
-
-        return { product, score };
-      })
-      .sort((a, b) => b.score - a.score)
-      .find((entry) => entry.score > 0)?.product;
-
-    return { destinyMatch, rulingMatch, adminPick: explicitAdminPick || adminCandidates };
-  }, [allProducts, data.stones, destiny, mulank, rulingInfo.stones, staticProductIds]);
+    return { destinyMatch, rulingMatch, adminPick };
+  }, [allProducts, data.stones, destiny, mulank, rulingInfo.stones]);
 
   const handleDiscoverCrystals = () => {
     if (!dateOfBirth) {
@@ -483,7 +442,7 @@ const CustomizeYourOwnPage = () => {
               Destiny, Ruling, and Admin Curated
             </h2>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              We surface one crystal for your destiny number, one for your ruling number, and one special admin-selected piece that gets a premium spotlight.
+              We surface one crystal for your destiny number, one for your ruling number, and one piece explicitly selected by the admin.
             </p>
           </div>
 
@@ -598,7 +557,7 @@ const CustomizeYourOwnPage = () => {
                   Curated by the admin and shown as a premium feature
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                  This card is reserved for an admin-curated product. We look for custom database items or explicit overrides first, then give the selected product a featured spotlight.
+                  This spotlight appears only when the admin explicitly selects a product from the dashboard.
                 </p>
               </div>
 
@@ -630,16 +589,11 @@ const CustomizeYourOwnPage = () => {
                         <div className="flex flex-wrap gap-2">
                           <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-white/70">
                             <WandSparkles className="inline-block w-3 h-3 mr-1" />
-                            Admin curated
+                            Admin Curated
                           </span>
                           {topPicks.adminPick.featured && (
                             <span className="rounded-full border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-amber-200">
                               Featured
-                            </span>
-                          )}
-                          {topPicks.adminPick.isAdminCustomized && (
-                            <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-widest text-purple-200">
-                              Customized
                             </span>
                           )}
                         </div>
@@ -654,7 +608,7 @@ const CustomizeYourOwnPage = () => {
                 </div>
               ) : (
                 <div className="lg:w-[420px] w-full rounded-2xl border border-dashed border-white/10 p-5 text-sm text-muted-foreground">
-                  No admin-curated product is available yet. Once an admin creates or overrides a product in the dashboard, it will appear here.
+                  No admin-curated product is selected yet. The admin can choose any product from the product dashboard.
                 </div>
               )}
             </div>

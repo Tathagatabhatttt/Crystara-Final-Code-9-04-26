@@ -1,8 +1,8 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Heart, ShoppingBag, Minus, Plus, ChevronLeft, Sparkles, Award, Zap, Banknote, Gift, Shield } from "lucide-react";
-import { useState, useEffect } from "react";
-import { trackEvent } from "@/services/analytics";
+import { useState, useEffect, useRef } from "react";
+import { createAnalyticsEventId, trackEvent } from "@/services/analytics";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -90,6 +90,7 @@ const stoneProperties: Record<string, string[]> = {
 
 const ProductDetail = () => {
   const { productId } = useParams<{ productId: string }>();
+  const productViewEventIds = useRef(new Map<string, string>());
   const [quantity, setQuantity] = useState(1);
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
@@ -105,8 +106,15 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (product && !isAdmin) {
+      let eventId = productViewEventIds.current.get(product.id);
+      if (!eventId) {
+        eventId = createAnalyticsEventId();
+        productViewEventIds.current.set(product.id, eventId);
+      }
+
       trackEvent({
         eventType: "product_click",
+        eventId,
         productId: product.id,
         productName: `${product.name} ${product.subCategory || ""}`,
         category: product.category,
