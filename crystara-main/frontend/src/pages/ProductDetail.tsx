@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { isWelcomeOfferEligible, WELCOME_DISCOUNT_PERCENT } from "@/lib/welcomeOffer";
 import CmsIcon from "@/components/CmsIcon";
 import { useProductFeatures } from "@/hooks/useSiteSettings";
+import { Price } from "@/components/Price";
 
 // Stone material/composition data
 const stoneMaterials: Record<string, string> = {
@@ -230,10 +231,14 @@ const ProductDetail = () => {
 
               {/* Price */}
               <div className="flex items-center gap-3 mb-2">
-                <span className="font-sans text-2xl md:text-3xl font-bold tabular-nums text-primary">₹{product.price.toLocaleString()}</span>
+                <Price amount={product.price} className="text-2xl md:text-3xl text-primary" />
                 {product.originalPrice && (
                   <>
-                    <span className="font-sans text-lg md:text-xl tabular-nums text-slate-500 dark:text-slate-400 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                    <Price
+                      amount={product.originalPrice}
+                      strike
+                      className="text-lg md:text-xl text-slate-500 dark:text-slate-400"
+                    />
                     <Badge variant="destructive" className="text-sm font-bold px-2.5 py-1 shadow-sm">{discount}% OFF</Badge>
                   </>
                 )}

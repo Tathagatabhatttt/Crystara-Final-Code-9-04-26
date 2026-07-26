@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -137,6 +137,25 @@
 }
 
 @layer utilities {
+  /* Keep ₹ and digits optically flush, like marketplace price tags */
+  .price-tag {
+    font-variant-numeric: tabular-nums lining-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+
+  .price-currency,
+  .price-digits {
+    display: inline-block;
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  .price-currency {
+    /* Optical nudge so the rupee mark sits level with digits */
+    transform: translateY(0.02em);
+    margin-right: 0.04em;
+  }
+
   .text-gradient-mystic {
     background: var(--gradient-mystic);
     -webkit-background-clip: text;

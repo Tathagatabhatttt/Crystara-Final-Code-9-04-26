@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useCatalogSearchProducts } from "@/hooks/useCatalog";
+import { Price } from "@/components/Price";
 
 interface SearchModalProps {
   isOpen: boolean;
@@ -84,9 +85,7 @@ const SearchModal = ({ isOpen, onClose }: SearchModalProps) => {
                           <p className="text-sm text-muted-foreground">
                             {product.category}
                           </p>
-                          <p className="text-primary font-semibold">
-                            ₹{product.price.toLocaleString()}
-                          </p>
+                          <Price amount={product.price} className="text-primary font-semibold" />
                         </div>
                       </Link>
                     ))}

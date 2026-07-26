@@ -8,6 +8,7 @@ import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRef, useState } from "react";
+import { Price } from "@/components/Price";
 
 const Wishlist = () => {
   const { items, removeFromWishlist } = useWishlist();
@@ -190,8 +191,14 @@ const WishlistItemCard = ({
             <h3 className="font-serif font-semibold text-sm line-clamp-2 hover:text-primary">{item.name}</h3>
           </Link>
           <div className="flex flex-col items-start sm:flex-row sm:items-center gap-0.5 sm:gap-2 my-1.5">
-            <span className="font-sans text-sm font-bold tabular-nums text-primary leading-none">₹{item.price.toLocaleString()}</span>
-            {item.originalPrice && <span className="font-sans text-[10px] tabular-nums text-slate-500 dark:text-slate-400 line-through leading-none">₹{item.originalPrice.toLocaleString()}</span>}
+            <Price amount={item.price} className="text-sm text-primary" />
+            {item.originalPrice && (
+              <Price
+                amount={item.originalPrice}
+                strike
+                className="text-[10px] text-slate-500 dark:text-slate-400"
+              />
+            )}
           </div>
         </div>
         <Button size="sm" className="w-full text-xs h-8 mt-2" onClick={() => onMoveToCart(item)}>

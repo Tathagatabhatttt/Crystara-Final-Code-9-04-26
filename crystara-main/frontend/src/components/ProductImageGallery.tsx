@@ -27,23 +27,22 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
   const [lensSize, setLensSize] = useState({ w: 140, h: 140 });
   const [imageBox, setImageBox] = useState({ w: 1, h: 1 });
   const [isDesktop, setIsDesktop] = useState(false);
-
-  // Fullscreen mobile/desktop modal zoom state
   const [modalScale, setModalScale] = useState(1);
   const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDraggingSlide, setIsDraggingSlide] = useState(false);
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLDivElement>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
+  const slideStartRef = useRef<{ x: number; y: number; dragging: boolean } | null>(null);
   const panStartRef = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
   const pinchStartRef = useRef<{ distance: number; scale: number } | null>(null);
   const lastTapRef = useRef(0);
 
   const totalItems = videoUrl ? images.length + 1 : images.length;
   const isVideoSelected = Boolean(videoUrl && currentIndex === images.length);
-  const currentImage = images[currentIndex];
-
-  // Amazon/Flipkart style: lens shows ~2.5x of the hovered area
+  const currentImage = !isVideoSelected ? images[currentIndex] : undefined;
   const ZOOM_FACTOR = 2.5;
 
   useEffect(() => {
@@ -70,55 +69,61 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
 
   useEffect(() => {
     setHoverZoom(false);
+    setDragOffset(0);
+    setIsDraggingSlide(false);
   }, [currentIndex]);
 
-  const goToPrev = () => setCurrentIndex((prev) => (prev === 0 ? totalItems - 1 : prev - 1));
-  const goToNext = () => setCurrentIndex((prev) => (prev === totalItems - 1 ? 0 : prev + 1));
-
-  const handleMainScroll = () => {
-    if (!scrollContainerRef.current || totalItems <= 1) return;
-    const { scrollLeft, clientWidth } = scrollContainerRef.current;
-    if (clientWidth > 0) {
-      const newIndex = Math.round(scrollLeft / clientWidth);
-      if (newIndex !== currentIndex) setCurrentIndex(newIndex);
-    }
-  };
-
-  const slideTo = (idx: number) => {
-    if (!scrollContainerRef.current) return;
-    const width = scrollContainerRef.current.clientWidth;
-    scrollContainerRef.current.scrollTo({ left: idx * width, behavior: "smooth" });
-    setCurrentIndex(idx);
-  };
-
+  // Keep the active thumbnail visible in the strip
   useEffect(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        left: currentIndex * scrollContainerRef.current.clientWidth,
-      });
-    }
+    const strip = thumbsRef.current;
+    if (!strip) return;
+    const active = strip.querySelector<HTMLElement>(`[data-thumb-index="${currentIndex}"]`);
+    active?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
   }, [currentIndex]);
 
-  const updateLensFromPoint = useCallback(
-    (clientX: number, clientY: number) => {
-      const box = mainImageRef.current;
-      if (!box) return;
+  // Keep slide width in sync so transform-based sliding stays accurate.
+  useEffect(() => {
+    const box = mainImageRef.current;
+    if (!box) return;
+    const sync = () => {
       const rect = box.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      const lensW = Math.min(180, w / ZOOM_FACTOR);
-      const lensH = Math.min(180, h / ZOOM_FACTOR);
-      const x = clamp(clientX - rect.left - lensW / 2, 0, w - lensW);
-      const y = clamp(clientY - rect.top - lensH / 2, 0, h - lensH);
-      setImageBox({ w, h });
-      setLensSize({ w: lensW, h: lensH });
-      setLensPos({ x, y });
+      if (rect.width > 0) setImageBox({ w: rect.width, h: rect.height });
+    };
+    sync();
+    const observer = new ResizeObserver(sync);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, []);
+
+  const goTo = useCallback(
+    (idx: number) => {
+      if (totalItems <= 0) return;
+      const next = ((idx % totalItems) + totalItems) % totalItems;
+      setCurrentIndex(next);
     },
-    [],
+    [totalItems],
   );
 
+  const goToPrev = () => goTo(currentIndex - 1);
+  const goToNext = () => goTo(currentIndex + 1);
+
+  const updateLensFromPoint = useCallback((clientX: number, clientY: number) => {
+    const box = mainImageRef.current;
+    if (!box) return;
+    const rect = box.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    const lensW = Math.min(180, w / ZOOM_FACTOR);
+    const lensH = Math.min(180, h / ZOOM_FACTOR);
+    const x = clamp(clientX - rect.left - lensW / 2, 0, w - lensW);
+    const y = clamp(clientY - rect.top - lensH / 2, 0, h - lensH);
+    setImageBox({ w, h });
+    setLensSize({ w: lensW, h: lensH });
+    setLensPos({ x, y });
+  }, []);
+
   const handleImageMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDesktop || isVideoSelected) return;
+    if (!isDesktop || isVideoSelected || isDraggingSlide) return;
     setHoverZoom(true);
     updateLensFromPoint(e.clientX, e.clientY);
   };
@@ -130,9 +135,61 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
     setZoomOpen(true);
   };
 
-  const handleMainClick = () => {
-    // Desktop uses hover lens; click opens fullscreen for a closer look
-    openFullscreenZoom();
+  const handleSlidePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (isVideoSelected) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // Don't steal clicks from nav / zoom buttons
+    const target = e.target as HTMLElement;
+    if (target.closest("button")) return;
+
+    slideStartRef.current = { x: e.clientX, y: e.clientY, dragging: false };
+  };
+
+  const handleSlidePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!slideStartRef.current || isVideoSelected) return;
+    const dx = e.clientX - slideStartRef.current.x;
+    const dy = e.clientY - slideStartRef.current.y;
+
+    if (!slideStartRef.current.dragging) {
+      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dx) <= Math.abs(dy)) return;
+      slideStartRef.current.dragging = true;
+      setIsDraggingSlide(true);
+      setHoverZoom(false);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+
+    const width = mainImageRef.current?.clientWidth || 1;
+    setDragOffset(clamp(dx, -width * 0.95, width * 0.95));
+  };
+
+  const finishSlideDrag = (clientX: number) => {
+    if (!slideStartRef.current) return;
+    const started = slideStartRef.current;
+    slideStartRef.current = null;
+
+    if (!started.dragging) {
+      // Treat as click → open zoom on non-desktop / when not just navigating
+      if (!isDesktop) openFullscreenZoom();
+      else openFullscreenZoom();
+      setIsDraggingSlide(false);
+      setDragOffset(0);
+      return;
+    }
+
+    const width = mainImageRef.current?.clientWidth || 1;
+    const dx = clientX - started.x;
+    const threshold = width * 0.18;
+
+    if (dx <= -threshold) goToNext();
+    else if (dx >= threshold) goToPrev();
+
+    setIsDraggingSlide(false);
+    setDragOffset(0);
+  };
+
+  const handleSlidePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    finishSlideDrag(e.clientX);
   };
 
   const touchDistance = (touches: TouchList) => {
@@ -142,7 +199,6 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
 
   const handleModalPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    // Double-tap / double-click to toggle zoom
     const now = Date.now();
     if (now - lastTapRef.current < 280) {
       if (modalScale > 1) {
@@ -219,51 +275,82 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
 
   const bgPosX = imageBox.w > lensSize.w ? (lensPos.x / (imageBox.w - lensSize.w)) * 100 : 50;
   const bgPosY = imageBox.h > lensSize.h ? (lensPos.y / (imageBox.h - lensSize.h)) * 100 : 50;
+  const slideWidth = imageBox.w > 1 ? imageBox.w : 0;
+  const trackOffset = -(currentIndex * slideWidth) + dragOffset;
 
   return (
     <div className="space-y-4">
       <div className="relative lg:flex lg:gap-4 lg:items-start">
         <div
           ref={mainImageRef}
-          className="relative aspect-square w-full rounded-2xl overflow-hidden bg-card shadow-crystal"
+          className="relative aspect-square w-full rounded-2xl overflow-hidden bg-card shadow-crystal touch-pan-y"
           onMouseMove={handleImageMouseMove}
           onMouseLeave={() => setHoverZoom(false)}
+          onPointerDown={handleSlidePointerDown}
+          onPointerMove={handleSlidePointerMove}
+          onPointerUp={handleSlidePointerUp}
+          onPointerCancel={() => {
+            slideStartRef.current = null;
+            setIsDraggingSlide(false);
+            setDragOffset(0);
+          }}
         >
-          {isVideoSelected ? (
-            <div className="w-full h-full bg-black flex items-center justify-center">
-              <video src={videoUrl} controls className="w-full h-full object-contain" autoPlay />
-            </div>
-          ) : (
-            <div
-              ref={scrollContainerRef}
-              onScroll={handleMainScroll}
-              className={`h-full w-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide ${
-                isDesktop ? "overflow-hidden" : "touch-pan-x"
-              }`}
-            >
-              {images.map((image, idx) => (
-                <button
-                  key={image + idx}
-                  type="button"
-                  className={`relative w-full h-full flex-shrink-0 snap-start bg-black ${
-                    isDesktop ? "cursor-crosshair" : "cursor-zoom-in"
-                  }`}
-                  onClick={handleMainClick}
-                >
-                  <img
-                    src={image}
-                    alt={`${productName} - Image ${idx + 1}`}
-                    className="w-full h-full object-contain p-3 sm:p-4 select-none pointer-events-none"
-                    loading="eager"
-                    draggable={false}
-                  />
-                </button>
-              ))}
-            </div>
-          )}
+          <div
+            className="flex h-full will-change-transform"
+            style={{
+              transform: `translate3d(${trackOffset}px, 0, 0)`,
+              transition: isDraggingSlide ? "none" : "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            {images.map((image, idx) => (
+              <div
+                key={image + idx}
+                className={`relative h-full w-full min-w-full flex-shrink-0 bg-black ${
+                  isDesktop ? "cursor-crosshair" : "cursor-zoom-in"
+                }`}
+              >
+                <img
+                  src={image}
+                  alt={`${productName} - Image ${idx + 1}`}
+                  className="w-full h-full object-contain p-3 sm:p-4 select-none pointer-events-none"
+                  loading={idx === 0 ? "eager" : "lazy"}
+                  draggable={false}
+                />
+              </div>
+            ))}
 
-          {/* Flipkart/Amazon style hover lens */}
-          {isDesktop && hoverZoom && !isVideoSelected && currentImage && (
+            {videoUrl && (
+              <div className="relative h-full w-full min-w-full flex-shrink-0 bg-black flex items-center justify-center">
+                {isVideoSelected ? (
+                  <video
+                    src={videoUrl}
+                    controls
+                    className="w-full h-full object-contain"
+                    autoPlay
+                    playsInline
+                  />
+                ) : (
+                  <div className="relative w-full h-full">
+                    {images[0] && (
+                      <img
+                        src={images[0]}
+                        alt="Video preview"
+                        className="w-full h-full object-contain p-3 opacity-40"
+                        draggable={false}
+                      />
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-primary/90 text-white p-3 rounded-full shadow-lg">
+                        <Play size={28} fill="white" className="ml-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {isDesktop && hoverZoom && !isVideoSelected && currentImage && !isDraggingSlide && (
             <div
               className="pointer-events-none absolute z-20 border-2 border-primary/70 bg-primary/15 shadow-[0_0_0_9999px_rgba(0,0,0,0.12)]"
               style={{
@@ -281,7 +368,10 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
                 variant="secondary"
                 size="icon"
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-background/80 hover:bg-background w-10 h-10 z-10"
-                onClick={goToPrev}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToPrev();
+                }}
               >
                 <ChevronLeft size={20} />
               </Button>
@@ -289,7 +379,10 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
                 variant="secondary"
                 size="icon"
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-background/80 hover:bg-background w-10 h-10 z-10"
-                onClick={goToNext}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goToNext();
+                }}
               >
                 <ChevronRight size={20} />
               </Button>
@@ -302,24 +395,26 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
               variant="secondary"
               size="icon"
               className="absolute right-3 top-3 rounded-full bg-background/80 hover:bg-background w-10 h-10 z-10"
-              onClick={openFullscreenZoom}
+              onClick={(e) => {
+                e.stopPropagation();
+                openFullscreenZoom();
+              }}
               title="Zoom image"
             >
               <ZoomIn size={18} />
             </Button>
           )}
 
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 rounded-full px-3 py-1 text-xs font-medium z-10 shadow-sm border border-border/40">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 rounded-full px-3 py-1 text-xs font-medium z-10 shadow-sm border border-border/40 pointer-events-none">
             {isVideoSelected
               ? "Video Preview"
-              : isDesktop
-                ? "Hover to zoom · Click for fullscreen"
-                : `${currentIndex + 1} / ${images.length} · Tap to zoom`}
+              : `${currentIndex + 1} / ${images.length}${
+                  isDesktop ? " · Hover to zoom" : " · Swipe or tap to zoom"
+                }`}
           </div>
         </div>
 
-        {/* Side zoom pane (desktop, Amazon/Flipkart style) */}
-        {isDesktop && hoverZoom && !isVideoSelected && currentImage && (
+        {isDesktop && hoverZoom && !isVideoSelected && currentImage && !isDraggingSlide && (
           <div
             className="hidden lg:block absolute left-[calc(100%+1rem)] top-0 z-30 h-full aspect-square w-full max-w-[min(100%,520px)] rounded-2xl border border-border bg-card shadow-2xl overflow-hidden pointer-events-none"
             aria-hidden
@@ -337,14 +432,16 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
       </div>
 
       {totalItems > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div ref={thumbsRef} className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {images.map((img, idx) => (
             <button
               key={idx}
-              onClick={() => slideTo(idx)}
-              className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${
+              type="button"
+              data-thumb-index={idx}
+              onClick={() => goTo(idx)}
+              className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
                 idx === currentIndex && !isVideoSelected
-                  ? "border-primary shadow-crystal"
+                  ? "border-primary shadow-crystal scale-[1.03]"
                   : "border-border opacity-60 hover:opacity-100"
               }`}
             >
@@ -354,9 +451,13 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
 
           {videoUrl && (
             <button
-              onClick={() => setCurrentIndex(images.length)}
-              className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all relative bg-black ${
-                isVideoSelected ? "border-primary shadow-crystal" : "border-border opacity-80 hover:opacity-100"
+              type="button"
+              data-thumb-index={images.length}
+              onClick={() => goTo(images.length)}
+              className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 relative bg-black ${
+                isVideoSelected
+                  ? "border-primary shadow-crystal scale-[1.03]"
+                  : "border-border opacity-80 hover:opacity-100"
               }`}
             >
               {images[0] && (
@@ -376,12 +477,8 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
         </div>
       )}
 
-      {/* Fullscreen zoom: pinch / scroll / double-tap / drag */}
       {zoomOpen && currentImage && !isVideoSelected && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 flex flex-col"
-          onClick={() => setZoomOpen(false)}
-        >
+        <div className="fixed inset-0 z-50 bg-black/95 flex flex-col" onClick={() => setZoomOpen(false)}>
           <div className="relative z-20 flex items-center justify-between px-4 py-3 text-white">
             <p className="text-xs sm:text-sm text-white/80">
               {modalScale > 1
@@ -439,11 +536,11 @@ const ProductImageGallery = ({ images, productName, videoUrl }: ProductImageGall
                   key={`zoom-thumb-${idx}`}
                   type="button"
                   onClick={() => {
-                    setCurrentIndex(idx);
+                    goTo(idx);
                     setModalScale(1);
                     setModalOffset({ x: 0, y: 0 });
                   }}
-                  className={`h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border-2 ${
+                  className={`h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                     idx === currentIndex ? "border-primary" : "border-white/20 opacity-70"
                   }`}
                 >
