@@ -154,26 +154,22 @@ app.post("/verify-payment", verifyAuth, (req, res) => {
 // Public endpoint to bypass email rate limits by registering and auto-confirming users
 app.post("/auth/signup", async (req, res) => {
   try {
-    const { email, phone, password } = req.body;
+    const { email, password, phone } = req.body;
 
-    if ((!email && !phone) || !password) {
-      return res.status(400).json({ error: "Email or phone number, and password are required" });
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const createUserOptions = {
+    const cleanedPhone =
+      typeof phone === "string" ? phone.replace(/\D/g, "").slice(0, 10) : "";
+
+    // Email+password auth only. Phone is stored on the profile for delivery
+    // contact and is never used for SMS OTP login.
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
       password,
-    };
-
-    if (email) {
-      createUserOptions.email = email;
-      createUserOptions.email_confirm = true;
-    } else if (phone) {
-      createUserOptions.phone = phone;
-      createUserOptions.phone_confirm = true;
-    }
-
-    // Call Supabase Admin API to create and auto-confirm the user
-    const { data, error } = await supabase.auth.admin.createUser(createUserOptions);
+      email_confirm: true,
+    });
 
     if (error) {
       return res.status(400).json({ error: error.message });
@@ -188,7 +184,7 @@ app.post("/auth/signup", async (req, res) => {
         {
           user_id: user.id,
           email: user.email || null,
-          phone: user.phone || null,
+          phone: cleanedPhone || null,
           role: "user",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -641,6 +637,7 @@ app.patch("/profile", verifyAuth, async (req, res) => {
       address_state,
       address_pincode,
       saved_addresses,
+      date_of_birth,
     } = req.body;
 
     const updates = {};
@@ -653,6 +650,18 @@ app.patch("/profile", verifyAuth, async (req, res) => {
       updates.address_pincode = address_pincode;
     if (saved_addresses !== undefined)
       updates.saved_addresses = saved_addresses;
+    if (date_of_birth !== undefined) {
+      if (date_of_birth === null || date_of_birth === "") {
+        updates.date_of_birth = null;
+      } else if (
+        typeof date_of_birth === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(date_of_birth)
+      ) {
+        updates.date_of_birth = date_of_birth;
+      } else {
+        return res.status(400).json({ error: "Invalid date_of_birth format. Use YYYY-MM-DD." });
+      }
+    }
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -737,7 +746,7 @@ app.get("/admin/customers", verifyAuth, verifyAdmin, async (_req, res) => {
     ] = await Promise.all([
       supabase
         .from("user_profiles")
-        .select("user_id,email,name,phone,role,address_street,address_city,address_state,address_pincode,saved_addresses,created_at,updated_at")
+        .select("user_id,email,name,phone,date_of_birth,role,address_street,address_city,address_state,address_pincode,saved_addresses,created_at,updated_at")
         .order("created_at", { ascending: false }),
       supabase
         .from("orders")
@@ -822,6 +831,7 @@ app.get("/admin/customers", verifyAuth, verifyAdmin, async (_req, res) => {
             authUser?.user_metadata?.name ||
             "",
           phone: profile.phone || authUser?.phone || "",
+          date_of_birth: profile.date_of_birth || null,
           role: profile.role || "user",
           address_street: profile.address_street || "",
           address_city: profile.address_city || "",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Phone, MapPin, ArrowRight, ArrowLeft, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ const slideVariants = {
 };
 
 const OnboardingForm = ({ onComplete }: OnboardingFormProps) => {
-    const { session, user, setIsOnboarded } = useAuth();
+    const { session, user, profile, setIsOnboarded } = useAuth();
     const [step, setStep] = useState(1);
     const [direction, setDirection] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -53,6 +53,17 @@ const OnboardingForm = ({ onComplete }: OnboardingFormProps) => {
         addressState: "",
         addressPincode: "",
     });
+
+    useEffect(() => {
+        const profilePhone =
+            typeof profile?.phone === "string"
+                ? profile.phone.replace(/\D/g, "").slice(0, 10)
+                : "";
+        if (!profilePhone) return;
+        setFormData((prev) =>
+            prev.phone ? prev : { ...prev, phone: profilePhone },
+        );
+    }, [profile?.phone]);
 
     const progress = (step / TOTAL_STEPS) * 100;
 
@@ -218,7 +229,7 @@ const OnboardingForm = ({ onComplete }: OnboardingFormProps) => {
                                     Your Contact Number
                                 </h3>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    We'll use this for order updates and delivery coordination
+                                    Used for delivery and order updates only.
                                 </p>
                             </div>
                             <div className="space-y-2">
@@ -226,11 +237,16 @@ const OnboardingForm = ({ onComplete }: OnboardingFormProps) => {
                                 <Input
                                     id="phone"
                                     type="tel"
+                                    inputMode="numeric"
                                     placeholder="e.g. 9876543210"
                                     value={formData.phone}
                                     onChange={(e) => updateField("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                                     autoFocus
+                                    required
                                 />
+                                <p className="text-[11px] text-muted-foreground">
+                                    10-digit Indian mobile number
+                                </p>
                             </div>
                         </motion.div>
                     )}

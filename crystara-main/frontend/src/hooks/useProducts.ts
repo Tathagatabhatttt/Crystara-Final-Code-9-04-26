@@ -91,7 +91,7 @@ async function fetchProductCatalog(): Promise<ProductCategory[]> {
     }
 }
 
-async function fetchAllProducts(): Promise<FlatProduct[]> {
+async function fetchAllProducts(includeDeleted = false): Promise<FlatProduct[]> {
     const sanityPromise = sanityClient.fetch<FlatProduct[]>(ALL_PRODUCTS_QUERY)
         .catch((err) => {
             console.error("Sanity fetch failed:", err);
@@ -121,7 +121,7 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
                 categorySlug: row.category_slug || "",
                 subCategory: row.sub_category || "",
                 subCategorySlug: row.sub_category_slug || "",
-                isDeleted: row.is_deleted || false,
+                isDeleted: Boolean(row.is_deleted),
                 stock: row.stock !== undefined && row.stock !== null ? Number(row.stock) : undefined,
                 videoUrl: row.video_url || "",
                 alignedNumbers: Array.isArray(row.aligned_numbers) ? row.aligned_numbers.map(Number) : [],
@@ -138,11 +138,16 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
         supabasePromise
     ]);
 
+    const deletedIds = new Set(
+        supabaseProducts.filter((product) => product.isDeleted).map((product) => product.id),
+    );
+
     const staticProducts = getStaticProducts().map(p => ({
         ...p,
         isFromSanity: false,
         isFromSupabase: false,
         featured: p.featured || false,
+        isDeleted: deletedIds.has(p.id),
     })) as FlatProduct[];
 
     const merged = [...staticProducts];
@@ -150,26 +155,39 @@ async function fetchAllProducts(): Promise<FlatProduct[]> {
     // 1. Merge Sanity products (predefined products, they take precedence over static)
     sanityProducts.forEach((p) => {
         const idx = merged.findIndex((m) => m.id === p.id);
+        const next = {
+            ...p,
+            isFromSanity: true,
+            isDeleted: deletedIds.has(p.id),
+        };
         if (idx !== -1) {
-            merged[idx] = { ...merged[idx], ...p, isFromSanity: true };
+            merged[idx] = { ...merged[idx], ...next };
         } else {
-            merged.push({ ...p, isFromSanity: true });
+            merged.push(next as FlatProduct);
         }
     });
 
-    // 2. Merge Supabase products (overrides and custom database products)
+    // 2. Merge Supabase products (overrides, custom products, and delete tombstones)
     supabaseProducts.forEach((sp) => {
         if (!sp.id) return;
         const idx = merged.findIndex((m) => m.id === sp.id);
         if (idx !== -1) {
-            merged[idx] = { ...merged[idx], ...sp };
+            merged[idx] = {
+                ...merged[idx],
+                ...sp,
+                isDeleted: Boolean(sp.isDeleted || deletedIds.has(sp.id)),
+            };
         } else {
-            merged.push({ ...sp, isFromSanity: false });
+            merged.push({
+                ...sp,
+                isFromSanity: false,
+                isDeleted: Boolean(sp.isDeleted || deletedIds.has(sp.id)),
+            });
         }
     });
 
-    // Filter out any product marked as deleted
-    return merged.filter((p) => !p.isDeleted);
+    // Storefront never shows deleted products. Admin can request them.
+    return includeDeleted ? merged : merged.filter((p) => !p.isDeleted);
 }
 
 export function useProductCatalog() {
@@ -181,10 +199,11 @@ export function useProductCatalog() {
     });
 }
 
-export function useAllProducts() {
+export function useAllProducts(options?: { includeDeleted?: boolean }) {
+    const includeDeleted = Boolean(options?.includeDeleted);
     return useQuery<FlatProduct[]>({
-        queryKey: ["sanity-all-products"],
-        queryFn: fetchAllProducts,
+        queryKey: ["sanity-all-products", includeDeleted ? "with-deleted" : "active"],
+        queryFn: () => fetchAllProducts(includeDeleted),
         staleTime: 0,              // Always consider data stale so refetch runs on mount
         gcTime: 1000 * 60 * 30,   // Keep in memory for 30 min but always revalidate
         refetchOnWindowFocus: true, // Refetch when admin returns to the tab after editing

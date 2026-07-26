@@ -1,20 +1,36 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { CrystalButton } from "./CrystalButton";
 import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
+import { useAuth } from "@/contexts/AuthContext";
+import { saveDateOfBirth } from "@/lib/dateOfBirth";
 
 const CustomizeYourOwn = () => {
   const [birthDate, setBirthDate] = useState("");
   const navigate = useNavigate();
+  const { session, profile } = useAuth();
+
+  useEffect(() => {
+    const savedDob =
+      typeof profile?.date_of_birth === "string"
+        ? profile.date_of_birth.slice(0, 10)
+        : "";
+    if (savedDob && !birthDate) {
+      setBirthDate(savedDob);
+    }
+  }, [profile?.date_of_birth, birthDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const destiny = calculateDestinyNumber(birthDate);
     const ruling = calculateMulank(birthDate);
     if (destiny > 0) {
+      if (session?.access_token) {
+        void saveDateOfBirth(session.access_token, birthDate);
+      }
       navigate(`/customize-your-own?destiny=${destiny}&mulank=${ruling}&dob=${birthDate}`);
     }
   };

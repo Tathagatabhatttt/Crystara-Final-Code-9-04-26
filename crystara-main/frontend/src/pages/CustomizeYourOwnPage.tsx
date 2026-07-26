@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BadgeCheck, Crown, Sparkles, Stars, WandSparkles, ArrowLeft } from "lucide-react";
@@ -12,6 +12,7 @@ import { calculateDestinyNumber, calculateMulank } from "@/lib/numerology";
 import { CrystalButton } from "@/components/CrystalButton";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { resolveHeroSlides } from "@/lib/sanityImage";
+import { saveDateOfBirth } from "@/lib/dateOfBirth";
 
 const destinyData: Record<
   number,
@@ -116,7 +117,7 @@ const CustomizeYourOwnPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
+  const { user, session, profile, loading: authLoading } = useAuth();
   const { data: siteSettings } = useSiteSettings();
 
   // Search parameters for results view
@@ -126,6 +127,7 @@ const CustomizeYourOwnPage = () => {
   // Local state for birthdate form
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [formError, setFormError] = useState("");
+  const savedDobRef = useRef<string | null>(null);
 
   const backgroundImage =
     siteSettings?.customizePageBackground ||
@@ -135,6 +137,17 @@ const CustomizeYourOwnPage = () => {
   const destiny = dob ? calculateDestinyNumber(dob) : 1;
   const mulank = dob ? calculateMulank(dob) : 1;
 
+  // Prefill DOB from the saved profile when available
+  useEffect(() => {
+    const savedDob =
+      typeof profile?.date_of_birth === "string"
+        ? profile.date_of_birth.slice(0, 10)
+        : "";
+    if (savedDob && !dateOfBirth) {
+      setDateOfBirth(savedDob);
+    }
+  }, [profile?.date_of_birth, dateOfBirth]);
+
   // Sign in check for displaying reports
   useEffect(() => {
     if (!authLoading && hasValidParams && !user) {
@@ -143,6 +156,14 @@ const CustomizeYourOwnPage = () => {
       navigate(`/auth?redirect=${encodeURIComponent(returnUrl)}`, { replace: true });
     }
   }, [authLoading, user, navigate, hasValidParams, location.pathname, location.search]);
+
+  // Persist DOB whenever a signed-in customer reaches customize results
+  useEffect(() => {
+    if (!hasValidParams || !dob || !session?.access_token) return;
+    if (savedDobRef.current === dob) return;
+    savedDobRef.current = dob;
+    void saveDateOfBirth(session.access_token, dob);
+  }, [hasValidParams, dob, session?.access_token]);
 
   const { data: allProducts } = useCatalogProducts();
 
@@ -197,6 +218,11 @@ const CustomizeYourOwnPage = () => {
     if (!dateOfBirth) {
       setFormError("Please enter your date of birth");
       return;
+    }
+
+    if (session?.access_token) {
+      void saveDateOfBirth(session.access_token, dateOfBirth);
+      savedDobRef.current = dateOfBirth;
     }
 
     const destinyNumber = calculateDestinyNumber(dateOfBirth);

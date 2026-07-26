@@ -164,6 +164,7 @@ interface CustomerDetail {
   email?: string;
   name?: string;
   phone?: string;
+  date_of_birth?: string | null;
   role?: string;
   address_street?: string;
   address_city?: string;
@@ -256,7 +257,9 @@ const AdminPanel = () => {
 
   // Catalog Management States
   const queryClient = useQueryClient();
-  const { data: allMergedProducts, isLoading: isLoadingAllProducts, refetch: refetchAllProducts } = useAllProducts();
+  const { data: allMergedProducts, isLoading: isLoadingAllProducts, refetch: refetchAllProducts } = useAllProducts({
+    includeDeleted: true,
+  });
   const [supabaseProducts, setSupabaseProducts] = useState<any[]>([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [catalogSearch, setCatalogSearch] = useState("");
@@ -770,28 +773,51 @@ const AdminPanel = () => {
   };
 
   const handleDeleteProduct = async (product: any) => {
-    const isStatic = productCatalog.some(cat => 
-      cat.subCategories.some(sub => 
-        sub.variants.some(v => v.id === product.id)
-      )
+    const isBuiltInProduct = productCatalog.some((cat) =>
+      cat.subCategories.some((sub) => sub.variants.some((v) => v.id === product.id)),
     );
-    const isFromSanity = product.isFromSanity || isStatic;
-    
+
+    // Restore: clear the delete flag. For built-in catalog products we must keep
+    // a row (or delete only the tombstone carefully). Clearing is_deleted is safest.
     if (product.isDeleted) {
       if (!confirm("Are you sure you want to restore this product back to the shop?")) {
         return false;
       }
       try {
-        const { error } = await supabase
-          .from("products")
-          .delete()
-          .eq("id", product.id);
-          
-        if (error) throw error;
-        
+        if (isBuiltInProduct || product.isFromSanity) {
+          const { error } = await supabase
+            .from("products")
+            .upsert({
+              id: product.id,
+              name: product.name,
+              stone: product.stone || null,
+              price: product.price,
+              original_price: product.originalPrice || null,
+              benefit: product.benefit || null,
+              image: product.image || null,
+              gallery_images: Array.isArray(product.galleryImages) ? product.galleryImages : [],
+              featured: Boolean(product.featured),
+              category: product.category || "General",
+              category_slug: product.categorySlug || slugify(product.category || "General"),
+              sub_category: product.subCategory || null,
+              sub_category_slug: product.subCategorySlug || null,
+              video_url: product.videoUrl || null,
+              is_deleted: false,
+            });
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from("products")
+            .update({ is_deleted: false })
+            .eq("id", product.id);
+          if (error) throw error;
+        }
+
         toast.success("Product restored to shop successfully");
-        fetchSupabaseProducts();
-        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
+        await Promise.all([
+          fetchSupabaseProducts(),
+          queryClient.refetchQueries({ queryKey: ["sanity-all-products"] }),
+        ]);
         return true;
       } catch (err: any) {
         console.error("Restore product error:", err);
@@ -799,59 +825,49 @@ const AdminPanel = () => {
         return false;
       }
     }
-    
-    if (isFromSanity) {
-      if (!confirm("Are you sure you want to delete and hide this product from the shop? (This will hide it from customer views.)")) {
-        return false;
-      }
-      
-      try {
-        const { error } = await supabase
-          .from("products")
-          .upsert({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            category: product.category || "General",
-            category_slug: product.categorySlug || slugify(product.category || "General"),
-            sub_category: product.subCategory || null,
-            sub_category_slug: product.subCategorySlug || null,
-            is_deleted: true
-          });
-          
-        if (error) throw error;
-        
-        toast.success("Product hidden from shop successfully");
-        fetchSupabaseProducts();
-        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
-        return true;
-      } catch (err: any) {
-        console.error("Hide product error:", err);
-        toast.error(err.message || "Failed to hide product from shop");
-        return false;
-      }
-    } else {
-      if (!confirm("Are you sure you want to permanently delete this custom product?")) {
-        return false;
-      }
-      
-      try {
-        const { error } = await supabase
-          .from("products")
-          .delete()
-          .eq("id", product.id);
-          
-        if (error) throw error;
-        
-        toast.success("Product deleted successfully");
-        fetchSupabaseProducts();
-        await queryClient.refetchQueries({ queryKey: ["sanity-all-products"] });
-        return true;
-      } catch (err: any) {
-        console.error("Delete product error:", err);
-        toast.error(err.message || "Failed to delete product");
-        return false;
-      }
+
+    // Always soft-delete. Hard-deleting a built-in product just makes the
+    // static/Sanity copy reappear on the storefront.
+    if (
+      !confirm(
+        "Hide this product from the shop? It will stay in Admin as Hidden so you can restore it later.",
+      )
+    ) {
+      return false;
+    }
+
+    try {
+      const { error } = await supabase.from("products").upsert({
+        id: product.id,
+        name: product.name,
+        stone: product.stone || null,
+        price: Number(product.price || 0),
+        original_price: product.originalPrice || null,
+        benefit: product.benefit || null,
+        image: product.image || null,
+        gallery_images: Array.isArray(product.galleryImages) ? product.galleryImages : [],
+        featured: false,
+        category: product.category || "General",
+        category_slug: product.categorySlug || slugify(product.category || "General"),
+        sub_category: product.subCategory || null,
+        sub_category_slug: product.subCategorySlug || null,
+        video_url: product.videoUrl || null,
+        is_admin_customized: false,
+        is_deleted: true,
+      });
+
+      if (error) throw error;
+
+      toast.success("Product hidden from shop successfully");
+      await Promise.all([
+        fetchSupabaseProducts(),
+        queryClient.refetchQueries({ queryKey: ["sanity-all-products"] }),
+      ]);
+      return true;
+    } catch (err: any) {
+      console.error("Hide product error:", err);
+      toast.error(err.message || "Failed to hide product from shop");
+      return false;
     }
   };
 
@@ -2579,7 +2595,11 @@ const AdminPanel = () => {
                             {customer.name || "Unnamed Customer"}
                           </CardTitle>
                           <CardDescription>
-                            {customer.email || "No email"}{customer.phone ? ` | ${customer.phone}` : ""}
+                            {customer.email || "No email"}
+                            {customer.phone ? ` | ${customer.phone}` : ""}
+                            {customer.date_of_birth
+                              ? ` | DOB ${String(customer.date_of_birth).slice(0, 10)}`
+                              : ""}
                           </CardDescription>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
